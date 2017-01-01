@@ -121,6 +121,26 @@ namespace taoGUI {
       }
     }
 
+    public string getProjectFolderName(string appId) {
+      string fileLocation = Application.StartupPath + @"\taoGUI.resources\projects.tao";
+      string folderLocation = "";
+      using (var sr = new System.IO.StreamReader(fileLocation)) {
+        string line;
+        while ((line = sr.ReadLine()) != null) {
+          if ((line.Contains("\"applicationId\"") && line.Contains(appId))) {
+            // Skip lines "description" and "folder" ...
+            line = sr.ReadLine();
+            line = sr.ReadLine();
+            if (line.Contains("\"folder\"")) {
+              folderLocation = line.Substring(line.IndexOf(":") + 3);
+              folderLocation = folderLocation.Substring(0, folderLocation.Length-1);
+            }
+          }
+        }
+      }
+      return folderLocation;
+    }
+
     public void closeProjectFile(string appName) {
       string fileLocation = Application.StartupPath + @"\taoGUI.resources\projects.tao";
       string tempFile = System.IO.Path.GetTempFileName();
@@ -340,6 +360,89 @@ namespace taoGUI {
       }
     }
 
+    private void addTabContentTaoSuiteReports(string appId, string tabReportName, TabPage tabPageContent) {
+      string projectRootFolder = getProjectFolderName(appId) + @"\" + appId;
+      // Create a "ribbon" effect for various control items (like filters and search)
+      tabPageContent.Padding = new Padding(0, 24, 0, 0);
+      // Create a database selector so that users can switch between instances and compare results
+      System.Windows.Forms.ComboBox comboDbConnection = new System.Windows.Forms.ComboBox();
+      comboDbConnection.FormattingEnabled = true;
+      comboDbConnection.Location = new System.Drawing.Point(4, 28);
+      comboDbConnection.Name = "comboDbConnection." + appId;
+      comboDbConnection.Size = new System.Drawing.Size(200, 21);
+      comboDbConnection.TabIndex = 0;
+      comboDbConnection.Top = 0;
+      comboDbConnection.Left = 0;
+      comboDbConnection.Items.Add("All Database Connections");
+      comboDbConnection.SelectedIndex = 0;
+      // Read the connection files in the project config area
+      string taoDbConnections = projectRootFolder + @"\conf";
+      if (System.IO.Directory.Exists(taoDbConnections)) {
+        string[] dbConnections = System.IO.Directory.GetFiles(taoDbConnections);
+        foreach (string fileName in dbConnections) {
+          string ConnectionName = fileName.Substring(fileName.LastIndexOf("\\") + 1);
+          if (ConnectionName.Contains("Connection.")) {
+            string dbConnection = ConnectionName.Substring(11);
+            comboDbConnection.Items.Add(dbConnection.Substring(0, dbConnection.IndexOf(".")));
+            comboDbConnection.SelectedIndex++;
+          }
+        }
+      }
+      // Create data table of results
+      DataTable tableTaoSuiteReports = new DataTable();
+      // Add columns to datatable
+      tableTaoSuiteReports.Columns.Add("Tao Suite", typeof(string));
+      tableTaoSuiteReports.Columns.Add("Pass Rate", typeof(string));
+      tableTaoSuiteReports.Columns.Add("Last Execution", typeof(string));
+      tableTaoSuiteReports.Columns.Add("Iterations", typeof(string));
+      tableTaoSuiteReports.Columns.Add("Stability", typeof(string));
+      // Get Tao Sheet Report data: read the project parameters, assume Tao sheets are located at root/taoSuite_Input/*.xls
+      string taoSuiteInputFolder = projectRootFolder + @"\taoSuite_Input";
+      if (System.IO.Directory.Exists(taoSuiteInputFolder)) {
+        string[] fileEntries = System.IO.Directory.GetFiles(taoSuiteInputFolder);
+        foreach (string fileName in fileEntries) {
+          string suiteName = fileName.Substring(fileName.LastIndexOf("\\") + 1);
+          tableTaoSuiteReports.Rows.Add(suiteName);
+        }
+      }
+      // Attach the data table to the data grid view control
+      DataGridView taoSheets = new DataGridView();
+      taoSheets.DataSource = tableTaoSuiteReports;
+      // Disable (for now) user ability to insert, update or delete data in the grid view.
+      taoSheets.AllowUserToAddRows = false;
+      taoSheets.AllowUserToDeleteRows = false;
+      taoSheets.ReadOnly = true;
+      // Format the data grid view and then attach to the Tab page.
+      taoSheets.BorderStyle = BorderStyle.None;
+      taoSheets.BackgroundColor = Color.LightGray;
+      taoSheets.Dock = System.Windows.Forms.DockStyle.Fill;
+      // Attach the data grid view to a container, add pading top to the container (24px) to give room to some controls (e.g. drop down list and search)
+      tabPageContent.Controls.Add(comboDbConnection);
+      tabPageContent.Controls.Add(taoSheets);
+      // Resize "works" once the data is painted to the control
+      taoSheets.AutoResizeColumns(); 
+    }
+
+    private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {
+      switch (tabReportName) {
+        case "Tao Suite Reports":
+          addTabContentTaoSuiteReports(appId, tabReportName, tabPageContent);
+          break;
+        case "Summary":
+          break;
+        case "Velocity":
+          break;
+        case "Stability":
+          break;
+        case "Weather - Actual":
+          break;
+        case "Weather - Forecast":
+          break;
+        default:
+          break;
+      }
+    }
+
     private void showStatusReprtTabPage(string appId, string tabReportName, string tabReportKey) {
       int currentMainTab = tabCtrlAppStatus.SelectedIndex;
       int totalSubTabs = statusReportsTabControl.Count;
@@ -377,6 +480,7 @@ namespace taoGUI {
         statusReportsTabPages[countStatusReportsTabPages].TabIndex = 0; // First tab within first block
         statusReportsTabPages[countStatusReportsTabPages].Text = tabReportName;
         statusReportsTabPages[countStatusReportsTabPages].UseVisualStyleBackColor = true;
+        addTabContent(appId, tabReportName, statusReportsTabPages[countStatusReportsTabPages]);
       } else {
         statusReportsTabControl[currentSubTab].SelectedIndex = currentSubTab;
         int totalTabPages = statusReportsTabPages.Count;
@@ -405,6 +509,7 @@ namespace taoGUI {
           statusReportsTabPages[countStatusReportsTabPages].Text = tabReportName;
           statusReportsTabPages[countStatusReportsTabPages].UseVisualStyleBackColor = true;
           statusReportsTabControl[currentSubTab].SelectedIndex = currentTabIndex;
+          addTabContent(appId, tabReportName, statusReportsTabPages[countStatusReportsTabPages]);
         } else {
           statusReportsTabControl[currentSubTab].SelectedIndex = currentTabIndex;
         }
