@@ -360,44 +360,26 @@ namespace taoGUI {
       }
     }
 
-    private void getTaoResults(string projectRootFolder, string suiteName, string dbInstance, DataTable tableTaoSuiteReports, out string outLastKnownTaoGenerated, out int outTaoIterations) {
-      string taoSuiteOutputFolder = projectRootFolder + @"\taoSuite_Report";
-      string filePattern = suiteName.Substring(0, suiteName.IndexOf(".")) + "*" + dbInstance + ".xls";
-      string[] taoResults = System.IO.Directory.GetFiles(taoSuiteOutputFolder, filePattern);
-      int taoIterations = 0;
-      string lastKnownTaoGenerated = "-";
-      string taoGenerated = "";
-      foreach (string taoResult in taoResults) {
-        taoGenerated = taoResult.Substring(taoResult.LastIndexOf("\\")+1);
-        taoGenerated = taoGenerated.Substring(taoGenerated.IndexOf(".")+1);
-        taoGenerated = taoGenerated.Substring(0, taoGenerated.IndexOf("."));
-        if (String.Compare(taoGenerated, lastKnownTaoGenerated) > 0 ) {
-          lastKnownTaoGenerated = taoGenerated;
-        }
-        taoIterations++;
+    private void changeDbConnectionTaoSuiteReports(object sender, EventArgs e, string appId, string projectRootFolder, string dbInstance, DataTable tableTaoSuiteReports) {
+      taoReportCache tmpCacheStatus = new taoReportCache(projectRootFolder, appId, dbInstance);
+      if (!tmpCacheStatus.isCacheCurrent()) {
+        MessageBox.Show("The statistics for the Tao Suite Reports need re-calculating.  This will take a short while (please be patient).", "Re-calculating Statistics", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        tmpCacheStatus.updateActualResults();
       }
-      if (!lastKnownTaoGenerated.Equals("-")) {
-        lastKnownTaoGenerated = lastKnownTaoGenerated.Substring(0, lastKnownTaoGenerated.Length - 2) + ":" + lastKnownTaoGenerated.Substring(lastKnownTaoGenerated.Length - 2);
-        lastKnownTaoGenerated = lastKnownTaoGenerated.Replace("_", " ");
-        // Determine the pass-fail rates and stability (standard deviation)...
-      }
-      outLastKnownTaoGenerated = lastKnownTaoGenerated;
-      outTaoIterations = taoIterations;
-    }
-
-    private void changeDbConnectionTaoSuiteReports(object sender, EventArgs e, string projectRootFolder, string dbInstance, DataTable tableTaoSuiteReports) {
-      int totalRows = tableTaoSuiteReports.Rows.Count;
+      DataTable tmpCache = tmpCacheStatus.getCacheDataTable();
+      int totalRows = tmpCache.Rows.Count;
       for (int i = 0; i < totalRows; i++) {
-        string suiteName = tableTaoSuiteReports.Rows[i]["Tao Suite"].ToString();
-        int outTaoIterations = 0;
-        string outLastKnownTaoGenerated = "-";
-        getTaoResults(projectRootFolder, suiteName, dbInstance, tableTaoSuiteReports, out outLastKnownTaoGenerated, out outTaoIterations);
-        tableTaoSuiteReports.Rows[i]["Last Execution"] = outLastKnownTaoGenerated;
-        tableTaoSuiteReports.Rows[i]["Iterations"] = outTaoIterations;
+        tableTaoSuiteReports.Rows[i]["TaoSuite"] = tmpCache.Rows[i]["TaoSuite"];
+        tableTaoSuiteReports.Rows[i]["FirstRun"] = tmpCache.Rows[i]["FirstRun"];
+        tableTaoSuiteReports.Rows[i]["LastRun"] = tmpCache.Rows[i]["LastRun"];
+        tableTaoSuiteReports.Rows[i]["Iterations"] = tmpCache.Rows[i]["Iterations"];
+        tableTaoSuiteReports.Rows[i]["PassRate"] = tmpCache.Rows[i]["PassRate"];
+        tableTaoSuiteReports.Rows[i]["PassDelta"] = tmpCache.Rows[i]["PassDelta"];
+        tableTaoSuiteReports.Rows[i]["Volatility"] = tmpCache.Rows[i]["Volatility"];
       }
     }
 
-    private void addTabContentTaoSuiteReports(string appId, string tabReportName, TabPage tabPageContent) {
+    private void addTabContentTaoSuiteReports(string appId, TabPage tabPageContent) {
       string projectRootFolder = getProjectFolderName(appId) + @"\" + appId;
       // Create a "ribbon" effect for various control items (like filters and search)
       tabPageContent.Padding = new Padding(0, 24, 0, 0);
@@ -425,28 +407,17 @@ namespace taoGUI {
           }
         }
       }
-      // Create data table of results
-      DataTable tableTaoSuiteReports = new DataTable();
-      // Add columns to datatable
-      tableTaoSuiteReports.Columns.Add("Tao Suite", typeof(string));
-      tableTaoSuiteReports.Columns.Add("Pass Rate", typeof(double));
-      tableTaoSuiteReports.Columns.Add("Last Execution", typeof(string));
-      tableTaoSuiteReports.Columns.Add("Iterations", typeof(int));
-      tableTaoSuiteReports.Columns.Add("Stability", typeof(string));
-      // Get Tao Sheet Report data: read the project parameters, assume Tao sheets are located at root/taoSuite_Input/*.xls
-      string taoSuiteInputFolder = projectRootFolder + @"\taoSuite_Input";
-      if (System.IO.Directory.Exists(taoSuiteInputFolder)) {
-        string[] fileEntries = System.IO.Directory.GetFiles(taoSuiteInputFolder);
-        foreach (string fileName in fileEntries) {
-          string suiteName = fileName.Substring(fileName.LastIndexOf("\\") + 1);
-          int outTaoIterations = 0;
-          string outLastKnownTaoGenerated = "-";
-          getTaoResults( projectRootFolder, suiteName, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString(), tableTaoSuiteReports, out outLastKnownTaoGenerated, out outTaoIterations);
-          tableTaoSuiteReports.Rows.Add(suiteName, 0, outLastKnownTaoGenerated, outTaoIterations, "-");
-        }
+      string dbInstance = comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString();
+      // Check cache status and alert if update necessary...
+      DataTable tableTaoSuiteReports;
+      taoReportCache currentCacheStatus = new taoReportCache(projectRootFolder, appId, dbInstance);
+      if (!currentCacheStatus.isCacheCurrent()) {
+        MessageBox.Show("The statistics for the Tao Suite Reports need re-calculating.  This will take a short while (please be patient).", "Re-calculating Statistics", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        currentCacheStatus.updateActualResults();
       }
+      tableTaoSuiteReports = currentCacheStatus.getCacheDataTable();
       // Register a method on the event "change list" and pass data table as parameter
-      comboDbConnection.SelectedValueChanged += new System.EventHandler((sender, e) => changeDbConnectionTaoSuiteReports(sender, e, projectRootFolder, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString(), tableTaoSuiteReports));
+      comboDbConnection.SelectedValueChanged += new System.EventHandler((sender, e) => changeDbConnectionTaoSuiteReports(sender, e, appId, projectRootFolder, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString(), tableTaoSuiteReports));
       // Attach the data table to the data grid view control
       DataGridView taoSheets = new DataGridView();
       taoSheets.DataSource = tableTaoSuiteReports;
@@ -461,20 +432,32 @@ namespace taoGUI {
       // Attach the data grid view to a container, add pading top to the container (24px) to give room to some controls (e.g. drop down list and search)
       tabPageContent.Controls.Add(comboDbConnection);
       tabPageContent.Controls.Add(taoSheets);
-      // Resize "works" once the data is painted to the control
-      taoSheets.AutoResizeColumns();
       // Formats
-      taoSheets.Columns["Pass Rate"].DefaultCellStyle.Format = "N4";
-      taoSheets.Columns["Pass Rate"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-      taoSheets.Columns["Last Execution"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+      taoSheets.Columns["TaoSuite"].HeaderText = "Tao Suite";
+      taoSheets.Columns["FirstRun"].HeaderText = "First Run";
+      taoSheets.Columns["LastRun"].HeaderText = "Last Run";
+      taoSheets.Columns["Iterations"].HeaderText = "Iterations";
+      taoSheets.Columns["PassRate"].HeaderText = "Pass Rate";
+      taoSheets.Columns["PassDelta"].HeaderText = "Pass Delta";
+      taoSheets.Columns["Volatility"].HeaderText = "Volatility";
+      taoSheets.Columns["FirstRun"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+      taoSheets.Columns["LastRun"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
       taoSheets.Columns["Iterations"].DefaultCellStyle.Format = "N0";
       taoSheets.Columns["Iterations"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["PassRate"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["PassRate"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["PassDelta"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["PassDelta"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["Volatility"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["Volatility"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      // Resize "works" once the data is painted to the control
+      taoSheets.AutoResizeColumns();
     }
 
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {
       switch (tabReportName) {
         case "Tao Suite Reports":
-          addTabContentTaoSuiteReports(appId, tabReportName, tabPageContent);
+          addTabContentTaoSuiteReports(appId, tabPageContent);
           break;
         case "Summary":
           break;
