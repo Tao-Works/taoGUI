@@ -25,7 +25,9 @@
     private void InitializeComponent() {
       this.progressDescription = new System.Windows.Forms.Label();
       this.progressBar = new System.Windows.Forms.ProgressBar();
-      this.taoSuiteAction = new System.Windows.Forms.Label();
+      this.taoSuiteAction_1 = new System.Windows.Forms.Label();
+      this.taoSuiteAction_2 = new System.Windows.Forms.Label();
+      this.taoSuiteAction_3 = new System.Windows.Forms.Label();
       this.SuspendLayout();
       // 
       // progressDescription
@@ -40,31 +42,52 @@
       // 
       // progressBar
       // 
-      this.progressBar.Location = new System.Drawing.Point(16, 68);
+      this.progressBar.Location = new System.Drawing.Point(13, 104);
+      this.progressBar.Maximum = 1000;
       this.progressBar.Name = "progressBar";
-      this.progressBar.Size = new System.Drawing.Size(492, 23);
+      this.progressBar.Size = new System.Drawing.Size(495, 23);
       this.progressBar.Step = 1;
       this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
       this.progressBar.TabIndex = 1;
       this.progressBar.UseWaitCursor = true;
       // 
-      // taoSuiteAction
+      // taoSuiteAction_1
       // 
-      this.taoSuiteAction.AutoSize = true;
-      this.taoSuiteAction.Location = new System.Drawing.Point(13, 40);
-      this.taoSuiteAction.Name = "taoSuiteAction";
-      this.taoSuiteAction.Size = new System.Drawing.Size(127, 13);
-      this.taoSuiteAction.TabIndex = 2;
-      this.taoSuiteAction.Text = "Current Tao Suite actions";
-      this.taoSuiteAction.UseWaitCursor = true;
+      this.taoSuiteAction_1.AutoSize = true;
+      this.taoSuiteAction_1.Location = new System.Drawing.Point(13, 40);
+      this.taoSuiteAction_1.Name = "taoSuiteAction_1";
+      this.taoSuiteAction_1.Size = new System.Drawing.Size(133, 13);
+      this.taoSuiteAction_1.TabIndex = 2;
+      this.taoSuiteAction_1.Text = "1 - some Tao Suite actions";
+      this.taoSuiteAction_1.UseWaitCursor = true;
+      // 
+      // taoSuiteAction_2
+      // 
+      this.taoSuiteAction_2.AutoSize = true;
+      this.taoSuiteAction_2.Location = new System.Drawing.Point(13, 57);
+      this.taoSuiteAction_2.Name = "taoSuiteAction_2";
+      this.taoSuiteAction_2.Size = new System.Drawing.Size(133, 13);
+      this.taoSuiteAction_2.TabIndex = 3;
+      this.taoSuiteAction_2.Text = "2 - some Tao Suite actions";
+      // 
+      // taoSuiteAction_3
+      // 
+      this.taoSuiteAction_3.AutoSize = true;
+      this.taoSuiteAction_3.Location = new System.Drawing.Point(13, 74);
+      this.taoSuiteAction_3.Name = "taoSuiteAction_3";
+      this.taoSuiteAction_3.Size = new System.Drawing.Size(133, 13);
+      this.taoSuiteAction_3.TabIndex = 4;
+      this.taoSuiteAction_3.Text = "3 - some Tao Suite actions";
       // 
       // taoProgressBar
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(524, 108);
+      this.ClientSize = new System.Drawing.Size(520, 141);
       this.ControlBox = false;
-      this.Controls.Add(this.taoSuiteAction);
+      this.Controls.Add(this.taoSuiteAction_3);
+      this.Controls.Add(this.taoSuiteAction_2);
+      this.Controls.Add(this.taoSuiteAction_1);
       this.Controls.Add(this.progressBar);
       this.Controls.Add(this.progressDescription);
       this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -83,6 +106,8 @@
 
     private System.Windows.Forms.Label progressDescription;
     private System.Windows.Forms.ProgressBar progressBar;
-    private System.Windows.Forms.Label taoSuiteAction;
+    private System.Windows.Forms.Label taoSuiteAction_1;
+    private System.Windows.Forms.Label taoSuiteAction_2;
+    private System.Windows.Forms.Label taoSuiteAction_3;
   }
 }

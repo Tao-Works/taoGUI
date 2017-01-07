@@ -181,30 +181,50 @@ namespace taoGUI {
     }
 
     public void updateActualResults() {
+      Cursor.Current = Cursors.WaitCursor;
       // Clear cache...
       _cacheResults.Dispose();
       _cacheResults = initialiseCacheTable();
-      // Update actual values (pass rate)...
-      int actualRowCount = _actualResults.Rows.Count;
+      // Update actual values...
       taoProgressBar calcProgress = new taoProgressBar();
-      calcProgress.setProgressDescription("");
-      calcProgress.setProgressAction("");
-      calcProgress.setProgress(0);
       calcProgress.Show();
+      int actualRowCount = _actualResults.Rows.Count;
+      int _upperLimit = calcProgress.getProgressUpperLimit();
+      int _progressStep = 1;
+      int _progressMax = actualRowCount * 2;
       for (int i = 0; i < actualRowCount; i++) {
-        calcProgress.setProgressDescription("Processing " + i.ToString() + " out of " + actualRowCount.ToString() + " Tao Suite Report(s)...");
-        calcProgress.setProgressAction("Calculating pass rate for Tao Suite Report " + _actualResults.Rows[i]["TaoSuite"].ToString());
-        int progressMeter = (int)((double)i / (double)actualRowCount * 100.0);
+        double taoPassRate = 0.0;
+        double previousTaoPassRate = 0.0;
+        calcProgress.setProgressDescription("Processing Tao Suite: " + _actualResults.Rows[i]["TaoSuite"].ToString() + " (" + (i+1).ToString() + " out of " + actualRowCount.ToString() + " total)" );
+        int progressMeter = (int)((double)_progressStep / (double)_progressMax * (double)_upperLimit);
         calcProgress.setProgress(progressMeter);
+        _progressStep++;
+        // Pass rate calculation...
+        calcProgress.setProgressAction(1, "1) Calculating pass rate ...");
+        calcProgress.setProgressAction(2, "");
         calcProgress.Refresh();
         string targetFilename = _actualResults.Rows[i]["PassRateLocation"].ToString();
         if (targetFilename.Length > 0 && System.IO.File.Exists(targetFilename)) {
           taoReportReader lastKnownTao = new taoReportReader(targetFilename);
-          double taoPassRate = lastKnownTao.getOverallPassRate();
-          _actualResults.Rows[i]["PassRate"] = taoPassRate;
-        } else {
-          _actualResults.Rows[i]["PassRate"] = 0.0;
+          taoPassRate = lastKnownTao.getOverallPassRate();
         }
+        _actualResults.Rows[i]["PassRate"] = taoPassRate;
+        calcProgress.setProgressAction(1, "1) Calculating pass rate ... DONE");
+        progressMeter = (int)((double)_progressStep / (double)_progressMax * (double)_upperLimit);
+        calcProgress.setProgress(progressMeter);
+        _progressStep++;
+        // Pass rate delta calculation...
+        calcProgress.setProgressAction(2, "2) Calculating pass rate delta ...");
+        calcProgress.Refresh();
+        targetFilename = _actualResults.Rows[i]["PassDeltaLocation"].ToString();
+        if (targetFilename.Length > 0 && System.IO.File.Exists(targetFilename)) {
+          taoReportReader previousKnownTao = new taoReportReader(targetFilename);
+          previousTaoPassRate = previousKnownTao.getOverallPassRate();
+        }
+        _actualResults.Rows[i]["PassDelta"] = taoPassRate - previousTaoPassRate;
+        // Pass rate delta calculation...
+        calcProgress.setProgressAction(2, "2) Calculating pass rate delta ... DONE");
+        calcProgress.Refresh();
         // Update cache...
         _cacheResults.Rows.Add(
           _actualResults.Rows[i]["TaoSuite"].ToString(),
@@ -219,6 +239,8 @@ namespace taoGUI {
       persistCacheDataTable();
       calcProgress.Hide();
       calcProgress.Dispose();
+      GC.Collect();
+      Cursor.Current = Cursors.Default;
     }
 
     ~taoReportCache() {

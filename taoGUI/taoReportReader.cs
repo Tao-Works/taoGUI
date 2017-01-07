@@ -39,7 +39,7 @@ namespace taoGUI {
         //    2. Summary table starts row 16
         //    3. columns F - I contain summary values.
         _taoSheet = (Excel.Worksheet)_taoBook.Sheets[1];
-        int totalRows = (int)_taoSheet.Cells.SpecialCells(Excel.XlCellType.xlCellTypeLastCell).Row;
+        int totalRows = (int)_taoSheet.Cells.SpecialCells(Excel.XlCellType.xlCellTypeLastCell).Row + 1;
         System.Array _tmpTotalTests = (System.Array)_taoSheet.get_Range("F16", "F" + totalRows.ToString()).Cells.Value;
         List<string> _totalTests = _tmpTotalTests.OfType<string>().ToList();
         _totalTests.RemoveAll(item => item == null);
@@ -58,6 +58,7 @@ namespace taoGUI {
         _taoBook.Close(0);
         _taoApp.Quit();
         System.Runtime.InteropServices.Marshal.ReleaseComObject(_taoApp);
+        GC.Collect();
       }
     }
 
