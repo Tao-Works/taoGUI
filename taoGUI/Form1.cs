@@ -379,7 +379,55 @@ namespace taoGUI {
       }
     }
 
+    private void taoSheets_CellFormatting(object sender, System.Windows.Forms.DataGridViewCellFormattingEventArgs e, DataGridView taoSheetData) {
+      if (taoSheetData.Columns[e.ColumnIndex].Name.Equals("PassRate")) {
+        if (0.0 < (double)e.Value && (double)e.Value < 100.0) {
+          e.CellStyle.BackColor = Color.LemonChiffon;
+          e.CellStyle.SelectionBackColor = Color.DarkOrange;
+        }
+      }
+      if (taoSheetData.Columns[e.ColumnIndex].Name.Equals("PassDelta")) {
+        if ((double)e.Value < 0.0) {
+          e.CellStyle.BackColor = Color.LightPink;
+          e.CellStyle.SelectionBackColor = Color.DarkRed;
+        } else if ((double)e.Value > 0.0) {
+          e.CellStyle.BackColor = Color.LightGreen;
+          e.CellStyle.SelectionBackColor = Color.DarkGreen;
+        }
+      }
+    }
+
+    private void button_ShowTaoSuiteHistory(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData, string dbInstance) {
+      DataGridViewSelectedRowCollection rows = taoSheetData.SelectedRows;
+      if (rows.Count > 0) {
+        foreach (DataGridViewRow row in rows) {
+          DataRow myRow = (row.DataBoundItem as DataRowView).Row;
+          MessageBox.Show("Tao sheet " + myRow.ItemArray[0]);
+        }
+      } else {
+        Int32 selectedCellCount = taoSheetData.GetCellCount(DataGridViewElementStates.Selected);
+        if (selectedCellCount > 0) {
+          // Create a list of parts.
+          List<string> taoSheets = new List<string>();
+          for (int i = 0; i < selectedCellCount; i++) {
+            int rowIndex = taoSheetData.SelectedCells[i].RowIndex;
+            string taoSheet = taoSheetData.Rows[rowIndex].Cells[0].Value.ToString();
+            if (!taoSheets.Contains(taoSheet)) {
+              taoSheets.Add(taoSheet);
+            }
+          }
+          foreach (string aTaoSheet in taoSheets) {
+            TaoSuiteReportChart taoChart = new TaoSuiteReportChart(projectRootFolder, aTaoSheet, dbInstance);
+            taoChart.Show();
+          }
+        } else {
+          MessageBox.Show("Unable to chart the pass rate history as no Tao Suite was selected.", "Pass Rate History", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+        }
+      }
+    }
+
     private void addTabContentTaoSuiteReports(string appId, TabPage tabPageContent) {
+      DataTable tableTaoSuiteReports;
       string projectRootFolder = getProjectFolderName(appId) + @"\" + appId;
       // Create a "ribbon" effect for various control items (like filters and search)
       tabPageContent.Padding = new Padding(0, 24, 0, 0);
@@ -409,7 +457,6 @@ namespace taoGUI {
       }
       string dbInstance = comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString();
       // Check cache status and alert if update necessary...
-      DataTable tableTaoSuiteReports;
       taoReportCache currentCacheStatus = new taoReportCache(projectRootFolder, appId, dbInstance);
       if (!currentCacheStatus.isCacheCurrent()) {
         MessageBox.Show("The statistics for the Tao Suite Reports need re-calculating.  This will take a short while (please be patient).", "Re-calculating Statistics", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -450,8 +497,33 @@ namespace taoGUI {
       taoSheets.Columns["PassDelta"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
       taoSheets.Columns["Volatility"].DefaultCellStyle.Format = "N4";
       taoSheets.Columns["Volatility"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler((sender, e) => taoSheets_CellFormatting(sender, e, taoSheets));
       // Resize "works" once the data is painted to the control
       taoSheets.AutoResizeColumns();
+      // Buttons ...
+      System.Windows.Forms.Button buttonTaoSuiteReport = new System.Windows.Forms.Button();
+      buttonTaoSuiteReport.Image = global::taoGUI.Properties.Resources.Stats2;
+      buttonTaoSuiteReport.Location = new System.Drawing.Point(208, -1);
+      buttonTaoSuiteReport.Name = "buttonTaoSuiteReport";
+      buttonTaoSuiteReport.Size = new System.Drawing.Size(24, 23);
+      buttonTaoSuiteReport.TabIndex = 0;
+      buttonTaoSuiteReport.Top = -1;
+      buttonTaoSuiteReport.Left = 208;
+      buttonTaoSuiteReport.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonTaoSuiteReport.UseVisualStyleBackColor = true;
+      buttonTaoSuiteReport.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistory(sender, e, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
+      tabPageContent.Controls.Add(buttonTaoSuiteReport);
+      // Finally set up button too-tips...
+      ToolTip toolTip1 = new ToolTip();
+      // Set up the delays for the ToolTip.
+      toolTip1.AutoPopDelay = 5000;
+      toolTip1.InitialDelay = 1000;
+      toolTip1.ReshowDelay = 500;
+      // Force the ToolTip text to be displayed whether or not the form is active.
+      toolTip1.ShowAlways = true;
+      // Set up the ToolTip text for the Combobox and Buttons.
+      toolTip1.SetToolTip(comboDbConnection, "Select the database instance relevant to the Tao Suite Reports");
+      toolTip1.SetToolTip(buttonTaoSuiteReport, "Display the history of pass rates for a selection of Tao Suites");
     }
 
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {

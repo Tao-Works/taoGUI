@@ -66,6 +66,14 @@ namespace taoGUI {
       return _overallPassRate;
     }
 
+    public int getTotalTests() {
+      return _sumTotalTests;
+    }
+
+    public int getPairsThatAreEqual() {
+      return _sumPairsThatAreEqual;
+    }
+
     ~taoReportReader() {
       // Clean up...
     }
