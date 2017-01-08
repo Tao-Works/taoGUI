@@ -171,6 +171,8 @@ namespace taoGUI {
     public Form1() {
       InitializeComponent();
       _taoApp = new Excel.Application();
+      _taoApp.Calculation = Excel.XlCalculation.xlCalculationManual; // For efficiency and performance
+      _taoApp.ScreenUpdating = false;   // For efficiency and performance
       _taoApp.Visible = false;
       showProjectsInTreeView();
     }
