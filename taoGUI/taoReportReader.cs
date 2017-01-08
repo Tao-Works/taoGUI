@@ -8,7 +8,6 @@ using Excel = Microsoft.Office.Interop.Excel;
 
 namespace taoGUI {
   class taoReportReader {
-
     private int _sumTotalTests;
     private int _sumPairsThatAreEqual;
     private double _overallPassRate;
@@ -22,7 +21,7 @@ namespace taoGUI {
     public taoReportReader (string taoReportFilename) {
       initialiseTaoSummaryValues();
       if (System.IO.File.Exists(taoReportFilename)) {
-        Form1._taoBook = Form1._taoApp.Workbooks.Open(taoReportFilename);
+        Form1._taoBook = Form1._taoApp.Workbooks.Open(taoReportFilename, false, true); // open in readonly mode (may add performance)
         // Tao Reports are very structured so, for now, assume:
         //    1. Summary results are here on the first Tab.
         //    2. Summary table starts row 16
