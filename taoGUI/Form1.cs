@@ -13,8 +13,6 @@ namespace taoGUI {
   public partial class Form1 : Form {
 
     public static Excel.Application _taoApp = null;
-    public static Excel.Workbook _taoBook = null;
-    public static Excel.Worksheet _taoSheet = null;
 
     private int countProjectsInTreeView;
     private TabControl tabCtrlAppStatus;                                            // This is the main "tab control" container for status reports
@@ -171,7 +169,6 @@ namespace taoGUI {
     public Form1() {
       InitializeComponent();
       _taoApp = new Excel.Application();
-      _taoApp.Calculation = Excel.XlCalculation.xlCalculationManual; // For efficiency and performance
       _taoApp.ScreenUpdating = false;   // For efficiency and performance
       _taoApp.Visible = false;
       showProjectsInTreeView();
