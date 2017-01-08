@@ -7,9 +7,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace taoGUI {
   public partial class Form1 : Form {
+
+    public static Excel.Application _taoApp = null;
+    public static Excel.Workbook _taoBook = null;
+    public static Excel.Worksheet _taoSheet = null;
+
     private int countProjectsInTreeView;
     private TabControl tabCtrlAppStatus;                                            // This is the main "tab control" container for status reports
     private List<TabPage> appStatusTabPages = new List<TabPage>();                  // This is the tab pages, each represent one specific Tao App.
@@ -164,7 +170,15 @@ namespace taoGUI {
 
     public Form1() {
       InitializeComponent();
+      _taoApp = new Excel.Application();
+      _taoApp.Visible = false;
       showProjectsInTreeView();
+    }
+
+    ~Form1() {
+      _taoApp.Quit();
+      System.Runtime.InteropServices.Marshal.ReleaseComObject(_taoApp);
+      GC.Collect();
     }
 
     private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -172,7 +186,6 @@ namespace taoGUI {
       if (MessageBox.Show("Do you really want to exit?", "Tao Commander", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) {
         Application.Exit();
       }
-
     }
 
     private void newToolStripMenuItem_Click(object sender, EventArgs e) {

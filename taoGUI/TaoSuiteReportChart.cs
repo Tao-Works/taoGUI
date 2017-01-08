@@ -51,10 +51,22 @@ namespace taoGUI {
       string[] taoResults = System.IO.Directory.GetFiles(taoSuiteOutputFolder, filePattern);
       var orderedResults = taoResults.OrderBy(f => f.ToString());
       string taoGenerated = ""; // YYYY-MM-DD_HHMM format
+      taoProgressBar calcProgress = new taoProgressBar();
+      calcProgress.Show();
+      System.Windows.Forms.Cursor.Current = Cursors.WaitCursor;
+      int _upperLimit = calcProgress.getProgressUpperLimit();
+      int _progressStep = 1;
+      int _progressMax = orderedResults.Count<string>() * 1;
+      calcProgress.setProgressDescription("Processing Tao Suite Reports " + taoSuite + " at " + dbInstance + " instance" );
       foreach ( string orderedResult in orderedResults) {
         taoGenerated = orderedResult.Substring(orderedResult.LastIndexOf("\\") + 1);
         taoGenerated = taoGenerated.Substring(taoGenerated.IndexOf(".") + 1);
         taoGenerated = taoGenerated.Substring(0, taoGenerated.IndexOf("."));
+        calcProgress.setProgressAction(1, "- Report generated " + taoGenerated.Substring(0, 10) + " " + taoGenerated.Substring(11, 2) + ":" + taoGenerated.Substring(13, 2));
+        calcProgress.setProgressAction(2, "- Processing files " + _progressStep.ToString() + " out of " + _progressMax.ToString() + " total");
+        int progressMeter = (int)((double)_progressStep / (double)_progressMax * (double)_upperLimit);
+        calcProgress.setProgress(progressMeter);
+        _progressStep++;
         int _year = Convert.ToInt32(taoGenerated.Substring(0, 4));
         int _month = Convert.ToInt32(taoGenerated.Substring(5, 2));
         int _day = Convert.ToInt32(taoGenerated.Substring(8, 2));
@@ -79,6 +91,10 @@ namespace taoGUI {
         seriesTrendLine.Points.Add(pointTrend);
         passRateChart.Invalidate();
       }
+      calcProgress.Hide();
+      calcProgress.Dispose();
+      GC.Collect();
+      System.Windows.Forms.Cursor.Current = Cursors.Default;
     }
   }
 }
