@@ -12,27 +12,33 @@ using System.Windows.Forms.DataVisualization.Charting;
 namespace taoGUI {
   public partial class TaoSuiteReportChart : Form {
 
-    public TaoSuiteReportChart(string projectRootFolder, string taoSuite, string dbInstance) {
+    public TaoSuiteReportChart(SeriesChartType targetChartType, string projectRootFolder, string taoSuite, string dbInstance) {
       InitializeComponent();
-      this.Text = "Pass Rate History - " + taoSuite;
+      if (targetChartType == SeriesChartType.StackedColumn100) {
+        this.Text = "Pass Rate History (percentage) - " + taoSuite + " @" + dbInstance;
+      } else if (targetChartType == SeriesChartType.StackedArea) {
+        this.Text = "Pass Rate History (actual) - " + taoSuite + " @" + dbInstance;
+      }
       passRateChart.Series.Clear();
       var seriesPass = new System.Windows.Forms.DataVisualization.Charting.Series {
         Name = "Pass",
         Color = System.Drawing.Color.LightSteelBlue,
         BorderColor = System.Drawing.Color.DarkSlateBlue,
+        BorderWidth = 2,
         IsVisibleInLegend = false,
         IsXValueIndexed = true,
         XValueType = ChartValueType.DateTime,
-        ChartType = SeriesChartType.StackedColumn100
+        ChartType = targetChartType
       };
       var seriesFail = new System.Windows.Forms.DataVisualization.Charting.Series {
         Name = "Fail",
         Color = System.Drawing.Color.LemonChiffon,
         BorderColor = System.Drawing.Color.DarkOrange,
+        BorderWidth = 2,
         IsVisibleInLegend = false,
         IsXValueIndexed = true,
         XValueType = ChartValueType.DateTime,
-        ChartType = SeriesChartType.StackedColumn100
+        ChartType = targetChartType
       };
       var seriesTrendLine = new System.Windows.Forms.DataVisualization.Charting.Series {
         Name = "TrendLine",
@@ -45,7 +51,9 @@ namespace taoGUI {
       };
       passRateChart.Series.Add(seriesPass);
       passRateChart.Series.Add(seriesFail);
-      passRateChart.Series.Add(seriesTrendLine);
+      if (targetChartType == SeriesChartType.StackedColumn100) {
+        passRateChart.Series.Add(seriesTrendLine);
+      }
       string taoSuiteOutputFolder = projectRootFolder + @"\taoSuite_Report";
       string filePattern = taoSuite.Substring(0, taoSuite.IndexOf(".")) + "*" + dbInstance + ".xls";
       string[] taoResults = System.IO.Directory.GetFiles(taoSuiteOutputFolder, filePattern);
@@ -77,20 +85,24 @@ namespace taoGUI {
         int taoTotalTests = taoSuiteResults.getTotalTests();
         int taoTestPass = taoSuiteResults.getPairsThatAreEqual();
         double taoTrendLine = (double)Decimal.Round((Decimal)taoSuiteResults.getOverallPassRate(),2);
-        DataPoint pointPass = new DataPoint();
-        pointPass.SetValueXY(x.ToOADate(), taoTestPass);
-        pointPass.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTestPass.ToString() + " tests");
-        seriesPass.Points.Add(pointPass);
-        DataPoint pointFail = new DataPoint();
-        pointFail.SetValueXY(x.ToOADate(), (taoTotalTests - taoTestPass));
-        pointFail.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), (taoTotalTests - taoTestPass).ToString() + " tests");
-        seriesFail.Points.Add(pointFail);
-        DataPoint pointTrend = new DataPoint();
-        pointTrend.SetValueXY(x.ToOADate(), taoTrendLine);
-        pointTrend.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTrendLine.ToString() + " % pass");
-        seriesTrendLine.Points.Add(pointTrend);
-        passRateChart.Invalidate();
+        if (taoTotalTests > 0) {
+          DataPoint pointPass = new DataPoint();
+          pointPass.SetValueXY(x.ToOADate(), taoTestPass);
+          pointPass.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTestPass.ToString() + " PASS");
+          seriesPass.Points.Add(pointPass);
+          DataPoint pointFail = new DataPoint();
+          pointFail.SetValueXY(x.ToOADate(), (taoTotalTests - taoTestPass));
+          pointFail.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), (taoTotalTests - taoTestPass).ToString() + " FAIL");
+          seriesFail.Points.Add(pointFail);
+          if (targetChartType == SeriesChartType.StackedColumn100) {
+            DataPoint pointTrend = new DataPoint();
+            pointTrend.SetValueXY(x.ToOADate(), taoTrendLine);
+            pointTrend.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTrendLine.ToString() + " % pass");
+            seriesTrendLine.Points.Add(pointTrend);
+          }
+        }
       }
+      passRateChart.Invalidate();
       calcProgress.Hide();
       calcProgress.Dispose();
       GC.Collect();

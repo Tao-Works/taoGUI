@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace taoGUI {
   public partial class Form1 : Form {
@@ -409,7 +410,7 @@ namespace taoGUI {
       }
     }
 
-    private void button_ShowTaoSuiteHistory(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData, string dbInstance) {
+    private void button_ShowTaoSuiteHistory(object sender, EventArgs e, SeriesChartType targetChartType, string projectRootFolder, DataGridView taoSheetData, string dbInstance) {
       DataGridViewSelectedRowCollection rows = taoSheetData.SelectedRows;
       if (rows.Count > 0) {
         foreach (DataGridViewRow row in rows) {
@@ -429,7 +430,7 @@ namespace taoGUI {
             }
           }
           foreach (string aTaoSheet in taoSheets) {
-            TaoSuiteReportChart taoChart = new TaoSuiteReportChart(projectRootFolder, aTaoSheet, dbInstance);
+            TaoSuiteReportChart taoChart = new TaoSuiteReportChart(targetChartType, projectRootFolder, aTaoSheet, dbInstance);
             taoChart.Show();
           }
         } else {
@@ -513,18 +514,30 @@ namespace taoGUI {
       // Resize "works" once the data is painted to the control
       taoSheets.AutoResizeColumns();
       // Buttons ...
-      System.Windows.Forms.Button buttonTaoSuiteReport = new System.Windows.Forms.Button();
-      buttonTaoSuiteReport.Image = global::taoGUI.Properties.Resources.Stats2;
-      buttonTaoSuiteReport.Location = new System.Drawing.Point(208, -1);
-      buttonTaoSuiteReport.Name = "buttonTaoSuiteReport";
-      buttonTaoSuiteReport.Size = new System.Drawing.Size(24, 23);
-      buttonTaoSuiteReport.TabIndex = 0;
-      buttonTaoSuiteReport.Top = -1;
-      buttonTaoSuiteReport.Left = 208;
-      buttonTaoSuiteReport.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
-      buttonTaoSuiteReport.UseVisualStyleBackColor = true;
-      buttonTaoSuiteReport.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistory(sender, e, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
-      tabPageContent.Controls.Add(buttonTaoSuiteReport);
+      System.Windows.Forms.Button buttonTaoSuiteReportPerc = new System.Windows.Forms.Button();
+      buttonTaoSuiteReportPerc.Image = global::taoGUI.Properties.Resources.Percent;
+      buttonTaoSuiteReportPerc.Location = new System.Drawing.Point(208, -1);
+      buttonTaoSuiteReportPerc.Name = "buttonTaoSuiteReportPerc";
+      buttonTaoSuiteReportPerc.Size = new System.Drawing.Size(24, 23);
+      buttonTaoSuiteReportPerc.TabIndex = 0;
+      buttonTaoSuiteReportPerc.Top = -1;
+      buttonTaoSuiteReportPerc.Left = 208;
+      buttonTaoSuiteReportPerc.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonTaoSuiteReportPerc.UseVisualStyleBackColor = true;
+      buttonTaoSuiteReportPerc.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistory(sender, e, SeriesChartType.StackedColumn100, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
+      tabPageContent.Controls.Add(buttonTaoSuiteReportPerc);
+      System.Windows.Forms.Button buttonTaoSuiteReportAct = new System.Windows.Forms.Button();
+      buttonTaoSuiteReportAct.Image = global::taoGUI.Properties.Resources.Stats2;
+      buttonTaoSuiteReportAct.Location = new System.Drawing.Point(235, -1);
+      buttonTaoSuiteReportAct.Name = "buttonTaoSuiteReportAct";
+      buttonTaoSuiteReportAct.Size = new System.Drawing.Size(24, 23);
+      buttonTaoSuiteReportAct.TabIndex = 0;
+      buttonTaoSuiteReportAct.Top = -1;
+      buttonTaoSuiteReportAct.Left = 235;
+      buttonTaoSuiteReportAct.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonTaoSuiteReportAct.UseVisualStyleBackColor = true;
+      buttonTaoSuiteReportAct.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistory(sender, e, SeriesChartType.StackedArea, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
+      tabPageContent.Controls.Add(buttonTaoSuiteReportAct);
       // Finally set up button too-tips...
       ToolTip toolTip1 = new ToolTip();
       // Set up the delays for the ToolTip.
@@ -535,7 +548,8 @@ namespace taoGUI {
       toolTip1.ShowAlways = true;
       // Set up the ToolTip text for the Combobox and Buttons.
       toolTip1.SetToolTip(comboDbConnection, "Select the database instance relevant to the Tao Suite Reports");
-      toolTip1.SetToolTip(buttonTaoSuiteReport, "Display the history of pass rates for a selection of Tao Suites");
+      toolTip1.SetToolTip(buttonTaoSuiteReportPerc, "Display the history of pass rates (as a stacked-column percentage chart) for a selection of Tao Suites");
+      toolTip1.SetToolTip(buttonTaoSuiteReportAct, "Display the history of pass rates (as stacked area chart) for a selection of Tao Suites");
     }
 
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {
