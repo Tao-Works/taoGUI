@@ -14,15 +14,19 @@ namespace taoGUI {
 
     public TaoSuiteReportChart(SeriesChartType targetChartType, string projectRootFolder, string taoSuite, string dbInstance) {
       InitializeComponent();
+      int _opacityPass = 255;
+      int _opacityFail = 255;
       if (targetChartType == SeriesChartType.StackedColumn100) {
         this.Text = "Pass Rate History (percentage) - " + taoSuite + " @" + dbInstance;
       } else if (targetChartType == SeriesChartType.StackedArea) {
         this.Text = "Pass Rate History (actual) - " + taoSuite + " @" + dbInstance;
+        _opacityPass = 132;
+        _opacityFail = 196;
       }
       passRateChart.Series.Clear();
       var seriesPass = new System.Windows.Forms.DataVisualization.Charting.Series {
         Name = "Pass",
-        Color = System.Drawing.Color.LightSteelBlue,
+        Color = Color.FromArgb(_opacityPass, System.Drawing.Color.LightSteelBlue ),
         BorderColor = System.Drawing.Color.DarkSlateBlue,
         BorderWidth = 2,
         IsVisibleInLegend = false,
@@ -32,7 +36,7 @@ namespace taoGUI {
       };
       var seriesFail = new System.Windows.Forms.DataVisualization.Charting.Series {
         Name = "Fail",
-        Color = System.Drawing.Color.LemonChiffon,
+        Color = Color.FromArgb(_opacityFail, System.Drawing.Color.LemonChiffon ),
         BorderColor = System.Drawing.Color.DarkOrange,
         BorderWidth = 2,
         IsVisibleInLegend = false,

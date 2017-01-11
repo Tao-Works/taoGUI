@@ -26,6 +26,8 @@ namespace taoGUI {
       _tmpTable.Columns.Add("Iterations", typeof(int));
       _tmpTable.Columns.Add("PassRate", typeof(double));
       _tmpTable.Columns.Add("PassDelta", typeof(double));
+      // Strategy changes: get all data, perform stats, save results...
+      // TO DO: add mean, standard deviation, normalised std. dev., future-implied volatility, moving average, MA std dev., upper & lower Bollinger bands.
       _tmpTable.Columns.Add("Volatility", typeof(double));
       return _tmpTable;
     }
