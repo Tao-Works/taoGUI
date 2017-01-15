@@ -441,7 +441,6 @@ namespace taoGUI {
           Convert.ToDouble(actualResults.Rows[i]["lowerBollingerBand"].ToString()),
           Convert.ToDouble(actualResults.Rows[i]["upperBollingerBand"].ToString()),
           Convert.ToDouble(actualResults.Rows[i]["impliedVolatility"].ToString()));
-        // TODO: persist each Tao Suite bar and line chart sample data...
         persistSampleData(actualResults.Rows[i]["taoSuiteName"].ToString(), allSamplePoints);
       }
       // Persist cache data

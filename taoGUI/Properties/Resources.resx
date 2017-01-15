@@ -121,25 +121,28 @@
   <data name="Stats" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Stats.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Weather Sun" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Weather Sun.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Cancel" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Cancel.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Weather Rain" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Weather Rain.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Percent" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Percent.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Stats2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Stats2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="Dots Up" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Dots Up.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Weather Sun" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Weather Sun.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="Stats2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Stats2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Weather Cloud" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Weather Cloud.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Weather Rain" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Weather Rain.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="Poll" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Poll.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

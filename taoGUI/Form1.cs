@@ -414,28 +414,64 @@ namespace taoGUI {
       }
     }
 
+    private void button_ShowTaoSuiteStatistics(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData, string dbInstance) {
+      DataGridViewSelectedRowCollection rows = taoSheetData.SelectedRows;
+      if (rows.Count > 0) {
+        foreach (DataGridViewRow row in rows) {
+          DataRow myRow = (row.DataBoundItem as DataRowView).Row;
+          string taoSheet = myRow.ItemArray[0].ToString();
+          double passRateMean = Convert.ToDouble(myRow.ItemArray[6].ToString());
+          double passRateStdDev = Convert.ToDouble(myRow.ItemArray[7].ToString());
+          double lowerBollingerBand = Convert.ToDouble(myRow.ItemArray[8].ToString());
+          double upperBollingerBand = Convert.ToDouble(myRow.ItemArray[9].ToString());
+          double impliedVolatility = Convert.ToDouble(myRow.ItemArray[10].ToString());
+          TaoSuiteReportChart taoChart = new TaoSuiteReportChart(projectRootFolder, taoSheet, dbInstance, passRateMean, passRateStdDev, lowerBollingerBand, upperBollingerBand, impliedVolatility);
+          taoChart.Show();
+        }
+      } else {
+        Int32 selectedCellCount = taoSheetData.GetCellCount(DataGridViewElementStates.Selected);
+        if (selectedCellCount > 0) {
+          List<string> taoSheets = new List<string>();
+          for (int i = 0; i < selectedCellCount; i++) {
+            int rowIndex = taoSheetData.SelectedCells[i].RowIndex;
+            string taoSheet = taoSheetData.Rows[rowIndex].Cells[0].Value.ToString();
+            double passRateMean = Convert.ToDouble(taoSheetData.Rows[rowIndex].Cells[6].Value.ToString());
+            double passRateStdDev = Convert.ToDouble(taoSheetData.Rows[rowIndex].Cells[7].Value.ToString());
+            double lowerBollingerBand = Convert.ToDouble(taoSheetData.Rows[rowIndex].Cells[8].Value.ToString());
+            double upperBollingerBand = Convert.ToDouble(taoSheetData.Rows[rowIndex].Cells[9].Value.ToString());
+            double impliedVolatility = Convert.ToDouble(taoSheetData.Rows[rowIndex].Cells[10].Value.ToString());
+            if (!taoSheets.Contains(taoSheet)) {
+              taoSheets.Add(taoSheet);
+              TaoSuiteReportChart taoChart = new TaoSuiteReportChart(projectRootFolder, taoSheet, dbInstance, passRateMean, passRateStdDev, lowerBollingerBand, upperBollingerBand, impliedVolatility);
+              taoChart.Show();
+            }
+          }
+        } else {
+          MessageBox.Show("Unable to chart the pass rate statistics as no Tao Suite was selected.", "Pass Rate Statistics", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+        }
+      }
+    }
+
     private void button_ShowTaoSuiteHistory(object sender, EventArgs e, SeriesChartType targetChartType, string projectRootFolder, DataGridView taoSheetData, string dbInstance) {
       DataGridViewSelectedRowCollection rows = taoSheetData.SelectedRows;
       if (rows.Count > 0) {
         foreach (DataGridViewRow row in rows) {
           DataRow myRow = (row.DataBoundItem as DataRowView).Row;
-          MessageBox.Show("Tao sheet " + myRow.ItemArray[0]);
+          TaoSuiteReportChart taoChart = new TaoSuiteReportChart(targetChartType, projectRootFolder, myRow.ItemArray[0].ToString(), dbInstance);
+          taoChart.Show();
         }
       } else {
         Int32 selectedCellCount = taoSheetData.GetCellCount(DataGridViewElementStates.Selected);
         if (selectedCellCount > 0) {
-          // Create a list of parts.
           List<string> taoSheets = new List<string>();
           for (int i = 0; i < selectedCellCount; i++) {
             int rowIndex = taoSheetData.SelectedCells[i].RowIndex;
             string taoSheet = taoSheetData.Rows[rowIndex].Cells[0].Value.ToString();
             if (!taoSheets.Contains(taoSheet)) {
               taoSheets.Add(taoSheet);
+              TaoSuiteReportChart taoChart = new TaoSuiteReportChart(targetChartType, projectRootFolder, taoSheet, dbInstance);
+              taoChart.Show();
             }
-          }
-          foreach (string aTaoSheet in taoSheets) {
-            TaoSuiteReportChart taoChart = new TaoSuiteReportChart(targetChartType, projectRootFolder, aTaoSheet, dbInstance);
-            taoChart.Show();
           }
         } else {
           MessageBox.Show("Unable to chart the pass rate history as no Tao Suite was selected.", "Pass Rate History", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
@@ -554,7 +590,19 @@ namespace taoGUI {
       buttonTaoSuiteReportAct.UseVisualStyleBackColor = true;
       buttonTaoSuiteReportAct.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistory(sender, e, SeriesChartType.StackedArea, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
       tabPageContent.Controls.Add(buttonTaoSuiteReportAct);
-      // Finally set up button too-tips...
+      System.Windows.Forms.Button buttonTaoSuiteReportPoll = new System.Windows.Forms.Button();
+      buttonTaoSuiteReportPoll.Image = global::taoGUI.Properties.Resources.Poll;
+      buttonTaoSuiteReportPoll.Location = new System.Drawing.Point(262, -1);
+      buttonTaoSuiteReportPoll.Name = "buttonTaoSuiteReportPoll";
+      buttonTaoSuiteReportPoll.Size = new System.Drawing.Size(24, 23);
+      buttonTaoSuiteReportPoll.TabIndex = 0;
+      buttonTaoSuiteReportPoll.Top = -1;
+      buttonTaoSuiteReportPoll.Left = 262;
+      buttonTaoSuiteReportPoll.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonTaoSuiteReportPoll.UseVisualStyleBackColor = true;
+      buttonTaoSuiteReportPoll.Click += new EventHandler((sender, e) => button_ShowTaoSuiteStatistics(sender, e, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
+      tabPageContent.Controls.Add(buttonTaoSuiteReportPoll);
+      // Finally set up button tool-tips...
       ToolTip toolTip1 = new ToolTip();
       // Set up the delays for the ToolTip.
       toolTip1.AutoPopDelay = 5000;
@@ -566,6 +614,7 @@ namespace taoGUI {
       toolTip1.SetToolTip(comboDbConnection, "Select the database instance relevant to the Tao Suite Reports");
       toolTip1.SetToolTip(buttonTaoSuiteReportPerc, "Display the history of pass rates (as a stacked-column percentage chart) for a selection of Tao Suites");
       toolTip1.SetToolTip(buttonTaoSuiteReportAct, "Display the history of pass rates (as stacked area chart) for a selection of Tao Suites");
+      toolTip1.SetToolTip(buttonTaoSuiteReportPoll, "Display pass rates, with mean, standard deviation and volatiltiy bands for a selection of Tao Suites");
     }
 
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {
