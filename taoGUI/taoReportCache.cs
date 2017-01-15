@@ -7,144 +7,249 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace taoGUI {
-  class taoReportCache {
+  class TaoReportCache {
 
-    private string _projectRootFolder;
-    private string _appId;
-    private string _dbInstance;
-    private string _cacheLocation;
-    private string _taoSuiteInputFolder;
-    private string _taoSuiteOutputFolder;
-    private DataTable _cacheResults;
-    private DataTable _actualResults;
+    private struct TaoApplicationFolder {
+      public string projectRootFolder;              // This is the project root folder containing all Tao applications and command scripts
+      public string appId;                          // The Tao application reference (e.g. tao.baer.conf.emir for all EMIR related)
+      public string dbInstance;                     // DB instance (like Oracle, H2, or some reference to a remote / cloud service)
+      public string cacheLocation;                  // Location of the Tao Suite Report Cache (where summary statistics are cached)
+      public string chartDataFolderPrefix;           // Folder prefix of the pass / fail bar chart cache (contains individual sample points as percentages)
+      public string taoSuiteInputFolder;            // Location of the Tao Suites
+      public string taoSuiteOutputFolder;           // Location of the Tao Suite Reports
+    };
+
+    private struct TaoSamplePoint {
+
+      // To be used later e.g. System.DateTime x = new System.DateTime(_year, _month, _day, _hour, _minute, 0);
+      public int sampleYear;
+      public int sampleMonth;
+      public int sampleDay;
+      public int sampleHour;
+      public int sampleMinute;
+
+      // To be used in calculations of mean, standard deviation, implied volatility and Bollinger bands
+      public int totalTests;
+      public int totalPass;
+      public double overallPassRate;
+
+      // Helper methods (getters, setters, etc.)
+      public TaoSamplePoint( string sampleResultFile ) {
+
+        string tmpTaoGenerated = sampleResultFile.Substring(sampleResultFile.LastIndexOf("\\") + 1);
+        tmpTaoGenerated = tmpTaoGenerated.Substring(tmpTaoGenerated.IndexOf(".") + 1);
+        tmpTaoGenerated = tmpTaoGenerated.Substring(0, tmpTaoGenerated.IndexOf("."));
+
+        sampleYear = Convert.ToInt32(tmpTaoGenerated.Substring(0, 4));
+        sampleMonth = Convert.ToInt32(tmpTaoGenerated.Substring(5, 2));
+        sampleDay = Convert.ToInt32(tmpTaoGenerated.Substring(8, 2));
+        sampleHour = Convert.ToInt32(tmpTaoGenerated.Substring(11, 2));
+        sampleMinute = Convert.ToInt32(tmpTaoGenerated.Substring(13, 2));
+
+        TaoReportReader taoSuiteResults = new TaoReportReader(sampleResultFile);
+
+        totalTests = taoSuiteResults.getTotalTests();
+        totalPass = taoSuiteResults.getPairsThatAreEqual();
+        overallPassRate = taoSuiteResults.getOverallPassRate();
+
+      }
+
+    }
+
+    private struct TaoStatistic {
+
+      // Main attributes (summary) ...
+      public string taoSuiteName;                   // Name of the project's Tao Suite
+      public string taoSuiteFirstRun;               // Date and time of the first Tao Suite execution at given DB instance
+      public string taoSuiteLastRun;                // Date and time of the last known Tao Suite execution at given DB instance
+      public int    taoSuiteIterations;             // Number of times this Tao Suite has executed at given DB instance  
+      public double passRate;                       // Defined as number of passes / total tests * 100% (note, failed and ignored tests are implied)
+      public double passRateDelta;                  // Defined as the absolute change from the previous pass rate to the current pass rate (absolute percentage)
+      public double passRateMean;                   // Defined as the arithmetric mean of population of pass results /Tao Suite per DB instance)
+      public double passRateStdDev;                 // Defined as the population standard deviation of pass rates (to arithmetric mean)
+      public double lowerBollingerBand;             // Defined as maximum( passRate - ( 2 * passRateStdDev ), 0 )
+      public double upperBollingerBand;             // Defined as minimum( passRate + ( 2 * passRateStdDev ), 100 )
+      public double impliedVolatility;              // Normalised standard deviation of the pass rate population (expected best guess future volatility)
+
+      // Helper attributes (samples) ...
+      public string passRateLocation;               // Location of the latest Tao Suite Report (containing data for the pass rate calculation)
+      public string passRateDeltaLocation;          // Location of the previous "last known" Tao Suite Report (so to calculate the pass rate delta)
+      public List<string> allTaoSuiteReports;       // Collection of all related Tao Suite Reports (containing raw sample points)
+
+      // Helper methods...
+      public void initialise(string suiteName) {
+        taoSuiteName = suiteName;
+        taoSuiteFirstRun = "-";
+        taoSuiteLastRun = "-";
+        taoSuiteIterations = 0;
+        passRate = 0.0;
+        passRateDelta = 0.0;
+        passRateMean = 0.0;
+        passRateStdDev = 0.0;
+        lowerBollingerBand = 0.0;
+        upperBollingerBand = 0.0;
+        impliedVolatility = 0.0;
+      }
+
+    };
+
+    private TaoApplicationFolder taoFolders;        // Using the parameters passed, this holds the complete Tao folder locations (Tao suite input, output, cache)
+    private DataTable cacheResults;                 // This represents the content of the current Tao Sute Report Cache
+    private DataTable actualResults;                // This is how the actual Tao Suite Report statistics look (so to compare with cache)
 
     private DataTable initialiseCacheTable() {
-      DataTable _tmpTable = new DataTable();
-      _tmpTable.Columns.Add("TaoSuite", typeof(string));
-      _tmpTable.Columns.Add("FirstRun", typeof(string));
-      _tmpTable.Columns.Add("LastRun", typeof(string));
-      _tmpTable.Columns.Add("Iterations", typeof(int));
-      _tmpTable.Columns.Add("PassRate", typeof(double));
-      _tmpTable.Columns.Add("PassDelta", typeof(double));
-      // Strategy changes: get all data, perform stats, save results...
-      // TO DO: add mean, standard deviation, normalised std. dev., future-implied volatility, moving average, MA std dev., upper & lower Bollinger bands.
-      _tmpTable.Columns.Add("Volatility", typeof(double));
-      return _tmpTable;
+      DataTable tmpTable = new DataTable();
+      tmpTable.Columns.Add("taoSuiteName", typeof(string));
+      tmpTable.Columns.Add("taoSuiteFirstRun", typeof(string));
+      tmpTable.Columns.Add("taoSuiteLastRun", typeof(string));
+      tmpTable.Columns.Add("taoSuiteIterations", typeof(int));
+      tmpTable.Columns.Add("passRate", typeof(double));
+      tmpTable.Columns.Add("passRateDelta", typeof(double));
+      tmpTable.Columns.Add("passRateMean", typeof(double));
+      tmpTable.Columns.Add("passRateStdDev", typeof(double));
+      tmpTable.Columns.Add("lowerBollingerBand", typeof(double));
+      tmpTable.Columns.Add("upperBollingerBand", typeof(double));
+      tmpTable.Columns.Add("impliedVolatility", typeof(double));
+      return tmpTable;
     }
 
     private void getCacheResults() {
-      _cacheResults = initialiseCacheTable();
-      if (System.IO.File.Exists(_cacheLocation)) {
-        using (Microsoft.VisualBasic.FileIO.TextFieldParser parser = new Microsoft.VisualBasic.FileIO.TextFieldParser(_cacheLocation)) {
+      cacheResults = initialiseCacheTable();
+      if (System.IO.File.Exists(taoFolders.cacheLocation)) {
+        using (Microsoft.VisualBasic.FileIO.TextFieldParser parser = new Microsoft.VisualBasic.FileIO.TextFieldParser(taoFolders.cacheLocation)) {
           parser.TextFieldType = Microsoft.VisualBasic.FileIO.FieldType.Delimited;
           parser.SetDelimiters(";");
-          string[] fields = parser.ReadFields(); // Skip header...
+          string[] fields = parser.ReadFields();    // Skip header...
           while (!parser.EndOfData) {
             fields = parser.ReadFields();
-            _cacheResults.Rows.Add(fields[0], fields[1], fields[2], Convert.ToInt32(fields[3]), Convert.ToDouble(fields[4]), Convert.ToDouble(fields[5]), Convert.ToDouble(fields[6]));
+            cacheResults.Rows.Add(
+              fields[0],                            // taoSuiteName
+              fields[1],                            // taoSuiteFirstRun
+              fields[2],                            // taoSuiteLastRun
+              Convert.ToInt32(fields[3]),           // taoSuiteIterations
+              Convert.ToDouble(fields[4]),          // passRate
+              Convert.ToDouble(fields[5]),          // passRateDelta
+              Convert.ToDouble(fields[6]),          // passRateMean
+              Convert.ToDouble(fields[7]),          // passRateStdDev
+              Convert.ToDouble(fields[8]),          // lowerBollingerBand
+              Convert.ToDouble(fields[9]),          // upperBollingerBand
+              Convert.ToDouble(fields[10]));        // impliedVolatility
           }
         }
       }
     }
 
-    private void getTaoResults(string projectRootFolder, string suiteName, string dbInstance, DataTable tableTaoSuiteReports, out string outFirstKnownTaoGenerated, out string outLastKnownTaoGenerated, out int outTaoIterations, out double outPassRate, out double outPassRateDelta, out double outTaoSheetVolatility, out string outPassRateLocation, out string outPassDeltaLocation) {
-      string taoSuiteOutputFolder = projectRootFolder + @"\taoSuite_Report";
-      string filePattern = suiteName.Substring(0, suiteName.IndexOf(".")) + "*" + dbInstance + ".xls";
-      string[] taoResults = System.IO.Directory.GetFiles(taoSuiteOutputFolder, filePattern);
-      string firstKnownTaoGenerated = "9999-99-99_2359";
-      string lastKnownTaoGenerated = "-";
-      int taoIterations = 0;
-      double taoPassRate = 0.0;
-      double taoPassRateDelta = 0.0;
-      double taoSheetVolatility = 0.0;
-      string taoGenerated = "";
-      string filenameForPassRateCalc = "";
-      string filenameForPassRateDeltaCalc = "";
+    private void getTaoResults(TaoApplicationFolder taoFolders, string suiteName, out TaoStatistic taoStatistics) {
+
+      TaoStatistic tmpStatistics = new TaoStatistic();
+      tmpStatistics.initialise(suiteName);
+
+      string filePattern = suiteName.Substring(0, suiteName.IndexOf(".")) + "*" + taoFolders.dbInstance + ".xls";
+      string[] taoResults = System.IO.Directory.GetFiles(taoFolders.taoSuiteOutputFolder, filePattern);
+
+      string tmptaoSuiteReport = "";
+      string tmpTaoSuiteFirstRun = "9999-99-99_2359";
+      string tmpTaoSuiteLastRun = "-";
+      int    tmpTaoSuiteIterations = 0;
+      string tmpPassRateLocation = "";
+      string tmpPassRateDeltaLocation = "";
+      List<string> tmpAllTaoSuiteReports = new List<string>();
+
       foreach (string taoResult in taoResults) {
-        taoGenerated = taoResult.Substring(taoResult.LastIndexOf("\\") + 1);
-        taoGenerated = taoGenerated.Substring(taoGenerated.IndexOf(".") + 1);
-        taoGenerated = taoGenerated.Substring(0, taoGenerated.IndexOf("."));
-        if (String.Compare(taoGenerated, lastKnownTaoGenerated) > 0) {
-          lastKnownTaoGenerated = taoGenerated;
-          filenameForPassRateDeltaCalc = filenameForPassRateCalc;
-          filenameForPassRateCalc = taoResult;
+        tmpAllTaoSuiteReports.Add(taoResult);
+        tmptaoSuiteReport = taoResult.Substring(taoResult.LastIndexOf("\\") + 1);
+        tmptaoSuiteReport = tmptaoSuiteReport.Substring(tmptaoSuiteReport.IndexOf(".") + 1);
+        tmptaoSuiteReport = tmptaoSuiteReport.Substring(0, tmptaoSuiteReport.IndexOf("."));
+        if (String.Compare(tmptaoSuiteReport, tmpTaoSuiteLastRun) > 0) {
+          tmpTaoSuiteLastRun = tmptaoSuiteReport;
+          tmpPassRateDeltaLocation = tmpPassRateLocation;
+          tmpPassRateLocation = taoResult;
         }
-        if (String.Compare(taoGenerated, firstKnownTaoGenerated) < 0) {
-          firstKnownTaoGenerated = taoGenerated;
+        if (String.Compare(tmptaoSuiteReport, tmpTaoSuiteFirstRun) < 0) {
+          tmpTaoSuiteFirstRun = tmptaoSuiteReport;
         }
-        taoIterations++;
+        tmpTaoSuiteIterations++;
       }
-      // Return values...
-      if (firstKnownTaoGenerated.Equals("9999-99-99_2359")) {
-        outFirstKnownTaoGenerated = "-";
+
+      if (tmpTaoSuiteFirstRun.Equals("9999-99-99_2359")) {
+        tmpStatistics.taoSuiteFirstRun = "-";
       } else {
-        firstKnownTaoGenerated = firstKnownTaoGenerated.Substring(0, firstKnownTaoGenerated.Length - 2) + ":" + firstKnownTaoGenerated.Substring(lastKnownTaoGenerated.Length - 2);
-        outFirstKnownTaoGenerated = firstKnownTaoGenerated.Replace("_", " ");
+        tmpTaoSuiteFirstRun = tmpTaoSuiteFirstRun.Substring(0, tmpTaoSuiteFirstRun.Length - 2) + ":" + tmpTaoSuiteFirstRun.Substring(tmpTaoSuiteLastRun.Length - 2);
+        tmpStatistics.taoSuiteFirstRun = tmpTaoSuiteFirstRun.Replace("_", " ");
       }
-      if (!lastKnownTaoGenerated.Equals("-")) {
-        lastKnownTaoGenerated = lastKnownTaoGenerated.Substring(0, lastKnownTaoGenerated.Length - 2) + ":" + lastKnownTaoGenerated.Substring(lastKnownTaoGenerated.Length - 2);
-        lastKnownTaoGenerated = lastKnownTaoGenerated.Replace("_", " ");
-        // Defer calculation of the pass-fail rates and volatility (standard deviation) until later...
+      if (!tmpTaoSuiteLastRun.Equals("-")) {
+        tmpTaoSuiteLastRun = tmpTaoSuiteLastRun.Substring(0, tmpTaoSuiteLastRun.Length - 2) + ":" + tmpTaoSuiteLastRun.Substring(tmpTaoSuiteLastRun.Length - 2);
+        tmpTaoSuiteLastRun = tmpTaoSuiteLastRun.Replace("_", " ");
       }
-      outLastKnownTaoGenerated = lastKnownTaoGenerated;
-      outTaoIterations = taoIterations;
-      outPassRate = taoPassRate;
-      outPassRateDelta = taoPassRateDelta;
-      outTaoSheetVolatility = taoSheetVolatility;
-      outPassRateLocation = filenameForPassRateCalc;
-      outPassDeltaLocation = filenameForPassRateDeltaCalc;
+      tmpStatistics.taoSuiteLastRun = tmpTaoSuiteLastRun;
+      tmpStatistics.taoSuiteIterations = tmpTaoSuiteIterations;
+      tmpStatistics.passRateLocation = tmpPassRateLocation;
+      tmpStatistics.passRateDeltaLocation = tmpPassRateDeltaLocation;
+      tmpStatistics.allTaoSuiteReports = tmpAllTaoSuiteReports;
+      taoStatistics = tmpStatistics;
     }
 
     private void getActualResults() {
-      _actualResults = initialiseCacheTable();
-      _actualResults.Columns.Add("PassRateLocation", typeof(string));
-      _actualResults.Columns.Add("PassDeltaLocation", typeof(string));
-      if (System.IO.Directory.Exists(_taoSuiteInputFolder)) {
-        string[] fileEntries = System.IO.Directory.GetFiles(_taoSuiteInputFolder);
+      actualResults = initialiseCacheTable();
+      // Extensions the Tao Suite Report Cache structure (used in method updateActualResults)
+      actualResults.Columns.Add("passRateLocation", typeof(string));
+      actualResults.Columns.Add("passRateDeltaLocation", typeof(string));
+      actualResults.Columns.Add("allTaoSuiteReports", typeof(List<string>));
+      if (System.IO.Directory.Exists(taoFolders.taoSuiteInputFolder)) {
+        string[] fileEntries = System.IO.Directory.GetFiles(taoFolders.taoSuiteInputFolder);
+        TaoStatistic taoStatistics = new TaoStatistic();
         foreach (string fileName in fileEntries) {
-          string suiteName = fileName.Substring(fileName.LastIndexOf("\\") + 1);
-          string outFirstKnownTaoGenerated = "-";
-          string outLastKnownTaoGenerated = "-";
-          int outTaoIterations = 0;
-          double outTaoPassRate = 0.0;
-          double outTaoPassRateDelta = 0.0;
-          double outTaoSheetVolatility = 0.0;
-          string outPassRateLocation;
-          string outPassDeltaLocation;
-          getTaoResults(_projectRootFolder, suiteName, _dbInstance, _actualResults, out outFirstKnownTaoGenerated, out outLastKnownTaoGenerated, out outTaoIterations, out outTaoPassRate, out outTaoPassRateDelta, out outTaoSheetVolatility, out outPassRateLocation, out outPassDeltaLocation);
-          _actualResults.Rows.Add(suiteName, outFirstKnownTaoGenerated, outLastKnownTaoGenerated, outTaoIterations, outTaoPassRate, outTaoPassRateDelta, outTaoSheetVolatility, outPassRateLocation, outPassDeltaLocation);
+          getTaoResults(taoFolders, fileName.Substring(fileName.LastIndexOf("\\") + 1), out taoStatistics);
+          actualResults.Rows.Add(
+            taoStatistics.taoSuiteName,
+            taoStatistics.taoSuiteFirstRun,
+            taoStatistics.taoSuiteLastRun,
+            taoStatistics.taoSuiteIterations,
+            taoStatistics.passRate,
+            taoStatistics.passRateDelta,
+            taoStatistics.passRateMean,
+            taoStatistics.passRateStdDev,
+            taoStatistics.lowerBollingerBand,
+            taoStatistics.upperBollingerBand,
+            taoStatistics.impliedVolatility,
+            taoStatistics.passRateLocation,
+            taoStatistics.passRateDeltaLocation,
+            taoStatistics.allTaoSuiteReports);
         }
       }
     }
 
     private void initialisedInternal(string projectRootFolder, string appId, string dbInstance) {
-      _projectRootFolder = projectRootFolder;
-      _appId = appId;
-      _dbInstance = dbInstance;
-      _cacheLocation = Application.StartupPath + @"\taoGUI.resources\tsrc_" + appId + "_" + dbInstance + ".tao";
-      _taoSuiteInputFolder = _projectRootFolder + @"\taoSuite_Input";
-      _taoSuiteOutputFolder = _projectRootFolder + @"\taoSuite_Report";
+      taoFolders = new TaoApplicationFolder();
+      taoFolders.projectRootFolder = projectRootFolder;
+      taoFolders.appId = appId;
+      taoFolders.dbInstance = dbInstance;
+      taoFolders.cacheLocation = Application.StartupPath + @"\taoGUI.resources\tsrc_" + appId + "_" + dbInstance + ".tao"; // (t)ao (s)uite (r)eport (c)ache
+      taoFolders.chartDataFolderPrefix = Application.StartupPath + @"\taoGUI.resources\chart_" + appId + "_" + dbInstance + "_";
+      taoFolders.taoSuiteInputFolder = taoFolders.projectRootFolder + @"\taoSuite_Input";
+      taoFolders.taoSuiteOutputFolder = taoFolders.projectRootFolder + @"\taoSuite_Report";
       getCacheResults();
       getActualResults();
     }
 
-    public taoReportCache (string projectRootFolder, string appId, string dbInstance) {
+    public TaoReportCache (string projectRootFolder, string appId, string dbInstance) {
       initialisedInternal(projectRootFolder, appId, dbInstance);
     }
 
     public bool isCacheCurrent() {
       bool cacheStatus = false;
-      int cacheRowCount = _cacheResults.Rows.Count;
-      int actualRowCount = _actualResults.Rows.Count;
+      int cacheRowCount = cacheResults.Rows.Count;
+      int actualRowCount = actualResults.Rows.Count;
       if (cacheRowCount == actualRowCount) {
         DataRow[] foundRows;
         int i = 0;
         bool allMatch = true;
         while (i < cacheRowCount && allMatch) {
           // Users could at any stage change the order of "cache" relative to "actual" hence nested search logic...
-          foundRows = _actualResults.Select("TaoSuite = '" + _cacheResults.Rows[i]["TaoSuite"].ToString() + "'");
+          foundRows = actualResults.Select("taoSuiteName = '" + cacheResults.Rows[i]["taoSuiteName"].ToString() + "'");
           if (foundRows.Length == 1) {
-            if (!_cacheResults.Rows[i]["LastRun"].ToString().Equals(foundRows[0]["LastRun"]) || Convert.ToInt32(_cacheResults.Rows[i]["Iterations"].ToString()) != Convert.ToInt32(foundRows[0]["Iterations"])) {
+            // Due to potential discrepancies between non-zero sample points and file counts -- do not include iterations as part of the calculation...
+            if (!cacheResults.Rows[i]["taoSuiteLastRun"].ToString().Equals(foundRows[0]["taoSuiteLastRun"])) {
               allMatch = false;
             } else {
               i++;
@@ -159,22 +264,26 @@ namespace taoGUI {
     }
 
     public DataTable getCacheDataTable() {
-      return _cacheResults;
+      return cacheResults;
     }
 
     private void persistCacheDataTable() {
-      using (var sw = new System.IO.StreamWriter(_cacheLocation)) {
+      using (var sw = new System.IO.StreamWriter(taoFolders.cacheLocation)) {
         string line;
-        sw.WriteLine("TaoSuite;FirstRun;LastRun;Iterations;PassRate;PassDelta;Volatility");
-        int totalRows = _cacheResults.Rows.Count;
+        sw.WriteLine("taoSuiteName;taoSuiteFirstRun;taoSuiteLastRun;taoSuiteIterations;passRate;passRateDelta;passRateMean;passRateStdDev;lowerBollingerBand;upperBollingerBand;impliedVolatility");
+        int totalRows = cacheResults.Rows.Count;
         for (int i = 0; i < totalRows; i++) {
-          line = _cacheResults.Rows[i]["TaoSuite"].ToString() + ";" +
-                 _cacheResults.Rows[i]["FirstRun"].ToString() + ";" +
-                 _cacheResults.Rows[i]["LastRun"].ToString() + ";" +
-                 _cacheResults.Rows[i]["Iterations"].ToString() + ";" +
-                 _cacheResults.Rows[i]["PassRate"].ToString() + ";" +
-                 _cacheResults.Rows[i]["PassDelta"].ToString() + ";" +
-                 _cacheResults.Rows[i]["Volatility"].ToString();
+          line = cacheResults.Rows[i]["taoSuiteName"].ToString() + ";" +
+                 cacheResults.Rows[i]["taoSuiteFirstRun"].ToString() + ";" +
+                 cacheResults.Rows[i]["taoSuiteLastRun"].ToString() + ";" +
+                 cacheResults.Rows[i]["taoSuiteIterations"].ToString() + ";" +
+                 cacheResults.Rows[i]["passRate"].ToString() + ";" +
+                 cacheResults.Rows[i]["passRateDelta"].ToString() + ";" +
+                 cacheResults.Rows[i]["passRateMean"].ToString() + ";" +
+                 cacheResults.Rows[i]["passRateStdDev"].ToString() + ";" +
+                 cacheResults.Rows[i]["lowerBollingerBand"].ToString() + ";" +
+                 cacheResults.Rows[i]["upperBollingerBand"].ToString() + ";" +
+                 cacheResults.Rows[i]["impliedVolatility"].ToString();
           sw.WriteLine(line);
         }
         sw.Flush();
@@ -182,60 +291,158 @@ namespace taoGUI {
       }
     }
 
-    public void updateActualResults() {
+    private void persistSampleData(string taoSuiteName, List<TaoSamplePoint> allSamplePoints) {
+      string chartLocation = taoFolders.chartDataFolderPrefix + taoSuiteName.Substring(0, taoSuiteName.IndexOf(".")) + ".tao";
+      using (var sw = new System.IO.StreamWriter(chartLocation)) {
+        string line;
+        sw.WriteLine("sampleYear;sampleMonth;sampleDay;sampleHour;sampleMinute;totalTests;totalPass;overallPassRate");
+        foreach (TaoSamplePoint tmpSamplePoint in allSamplePoints) {
+          line = tmpSamplePoint.sampleYear.ToString() + ";" +
+                 tmpSamplePoint.sampleMonth.ToString() + ";" +
+                 tmpSamplePoint.sampleDay.ToString() + ";" +
+                 tmpSamplePoint.sampleHour.ToString() + ";" +
+                 tmpSamplePoint.sampleMinute.ToString() + ";" +
+                 tmpSamplePoint.totalTests.ToString() + ";" +
+                 tmpSamplePoint.totalPass.ToString() + ";" +
+                 tmpSamplePoint.overallPassRate.ToString();
+          sw.WriteLine(line);
+        }
+        sw.Flush();
+        sw.Close();
+      }
+    }
+
+    // This method will clear the current cache (in memory), loop through the actualResults and re-build the currentCache (persisting once updated).
+    public void updateCacheResults() {
       Cursor.Current = Cursors.WaitCursor;
-      // Clear cache...
-      _cacheResults.Dispose();
-      _cacheResults = initialiseCacheTable();
-      // Update actual values...
+      cacheResults.Dispose();
+      cacheResults = initialiseCacheTable();
       taoProgressBar calcProgress = new taoProgressBar();
       calcProgress.Show();
-      int actualRowCount = _actualResults.Rows.Count;
-      int _upperLimit = calcProgress.getProgressUpperLimit();
-      int _progressStep = 1;
-      int _progressMax = actualRowCount * 2;
+      int actualRowCount = actualResults.Rows.Count;
+      int progressUpperLimit = calcProgress.getProgressUpperLimit();
+      int progressStep = 1;
+      int progressMaxSteps = actualRowCount * 3;
       for (int i = 0; i < actualRowCount; i++) {
         double taoPassRate = 0.0;
         double previousTaoPassRate = 0.0;
-        calcProgress.setProgressDescription("Processing Tao Suite: " + _actualResults.Rows[i]["TaoSuite"].ToString() + " (" + (i+1).ToString() + " out of " + actualRowCount.ToString() + " total)" );
-        int progressMeter = (int)((double)_progressStep / (double)_progressMax * (double)_upperLimit);
-        calcProgress.setProgress(progressMeter);
-        _progressStep++;
-        // Pass rate calculation...
+        calcProgress.setProgressDescription("Processing Tao Suite: " + actualResults.Rows[i]["taoSuiteName"].ToString() + " (" + (i+1).ToString() + " out of " + actualRowCount.ToString() + " total)" );
+        int progressSoFar = (int)((double)progressStep / (double)progressMaxSteps * (double)progressUpperLimit);
+        calcProgress.setProgress(progressSoFar);
+        progressStep++;
         calcProgress.setProgressAction(1, "1) Calculating pass rate ...");
         calcProgress.setProgressAction(2, "");
+        calcProgress.setProgressAction(3, "");
         calcProgress.Refresh();
-        string targetFilename = _actualResults.Rows[i]["PassRateLocation"].ToString();
+        string targetFilename = actualResults.Rows[i]["passRateLocation"].ToString();
         if (targetFilename.Length > 0 && System.IO.File.Exists(targetFilename)) {
-          taoReportReader lastKnownTao = new taoReportReader(targetFilename);
+          TaoReportReader lastKnownTao = new TaoReportReader(targetFilename);
           taoPassRate = lastKnownTao.getOverallPassRate();
         }
-        _actualResults.Rows[i]["PassRate"] = taoPassRate;
+        actualResults.Rows[i]["passRate"] = taoPassRate;
         calcProgress.setProgressAction(1, "1) Calculating pass rate ... DONE");
-        progressMeter = (int)((double)_progressStep / (double)_progressMax * (double)_upperLimit);
-        calcProgress.setProgress(progressMeter);
-        _progressStep++;
-        // Pass rate delta calculation...
+        progressSoFar = (int)((double)progressStep / (double)progressMaxSteps * (double)progressUpperLimit);
+        calcProgress.setProgress(progressSoFar);
+        progressStep++;
         calcProgress.setProgressAction(2, "2) Calculating pass rate delta ...");
         calcProgress.Refresh();
-        targetFilename = _actualResults.Rows[i]["PassDeltaLocation"].ToString();
+        targetFilename = actualResults.Rows[i]["passRateDeltaLocation"].ToString();
         if (targetFilename.Length > 0 && System.IO.File.Exists(targetFilename)) {
-          taoReportReader previousKnownTao = new taoReportReader(targetFilename);
+          TaoReportReader previousKnownTao = new TaoReportReader(targetFilename);
           previousTaoPassRate = previousKnownTao.getOverallPassRate();
         }
-        _actualResults.Rows[i]["PassDelta"] = taoPassRate - previousTaoPassRate;
-        // Pass rate delta calculation...
+        actualResults.Rows[i]["passRateDelta"] = taoPassRate - previousTaoPassRate;
         calcProgress.setProgressAction(2, "2) Calculating pass rate delta ... DONE");
+        progressSoFar = (int)((double)progressStep / (double)progressMaxSteps * (double)progressUpperLimit);
+        calcProgress.setProgress(progressSoFar);
+        progressStep++;
+        calcProgress.setProgressAction(3, "3) Calculating statistics ...");
         calcProgress.Refresh();
-        // Update cache...
-        _cacheResults.Rows.Add(
-          _actualResults.Rows[i]["TaoSuite"].ToString(),
-          _actualResults.Rows[i]["FirstRun"].ToString(),
-          _actualResults.Rows[i]["LastRun"].ToString(),
-          Convert.ToInt32(_actualResults.Rows[i]["Iterations"].ToString()),
-          Convert.ToDouble(_actualResults.Rows[i]["PassRate"].ToString()),
-          Convert.ToDouble(_actualResults.Rows[i]["PassDelta"].ToString()),
-          Convert.ToDouble(_actualResults.Rows[i]["Volatility"].ToString()));
+        List <string> tmpAllTaoSuiteReports = (List<string>)actualResults.Rows[i]["allTaoSuiteReports"];
+        List<TaoSamplePoint> allSamplePoints = new List<TaoSamplePoint>();
+        allSamplePoints.Clear();
+        int actualSamplePointsUsed = 0;
+        foreach (string taoReport in tmpAllTaoSuiteReports) {
+          calcProgress.setProgressAction(3, "3) Calculating statistics ... sample point " + (actualSamplePointsUsed+1).ToString() + " ...");
+          calcProgress.Refresh();
+          TaoSamplePoint tmpSamplePoint = new TaoSamplePoint(taoReport);
+          if (tmpSamplePoint.totalTests > 0) {
+            allSamplePoints.Add(tmpSamplePoint);
+            actualSamplePointsUsed++;
+          }
+        }
+        if (actualSamplePointsUsed > 0 ) {
+          actualResults.Rows[i]["passRateMean"] = allSamplePoints.Sum(Item => Item.overallPassRate) / (double)actualSamplePointsUsed;
+          actualResults.Rows[i]["passRateStdDev"] = Math.Sqrt(allSamplePoints.Sum(Item => Math.Pow((Item.overallPassRate - Convert.ToDouble(actualResults.Rows[i]["passRateMean"].ToString())), 2)) / (double)actualSamplePointsUsed);
+          double lowerBollingerBand = Convert.ToDouble(actualResults.Rows[i]["passRateMean"].ToString()) - (2.0 * Convert.ToDouble(actualResults.Rows[i]["passRateStdDev"].ToString()));
+          if (lowerBollingerBand < 0.0) {
+            lowerBollingerBand = 0.0;
+          }
+          actualResults.Rows[i]["lowerBollingerBand"] = lowerBollingerBand;
+          double upperBollingerBand = Convert.ToDouble(actualResults.Rows[i]["passRateMean"].ToString()) + (2.0 * Convert.ToDouble(actualResults.Rows[i]["passRateStdDev"].ToString()));
+          if (upperBollingerBand > 100.0) {
+            upperBollingerBand = 100.0;
+          }
+          actualResults.Rows[i]["upperBollingerBand"] = upperBollingerBand;
+          // Define volatiltiy as FILTERED standard deviation of log returns, appropriately adjusted to "10 iterations forward" and converted to percentage (Black-Scholes style volatility)
+          // TODO: Apply linear regression and Cooks Distance to correctly FILTER outliers (for now filter the samples using Bollinger bands)
+          if (actualSamplePointsUsed > 1) {
+            double previousSample = 0.0;
+            double currentSample = 0.0;
+            double logReturn = 0.0;
+            double logMean = 0.0;
+            int logSamples = 0;
+            foreach (TaoSamplePoint tmpSamplePoint in allSamplePoints) {
+              if (tmpSamplePoint.overallPassRate > 0.0 && lowerBollingerBand <= tmpSamplePoint.overallPassRate && tmpSamplePoint.overallPassRate <= upperBollingerBand) {
+                previousSample = currentSample;
+                currentSample = tmpSamplePoint.overallPassRate;
+              }
+              if (previousSample > 0.0) {
+                logReturn = logReturn + Math.Log(currentSample / previousSample); // Basis of volatility are the "relative returns" ...
+                logSamples++;
+              }
+            }
+            // Assume the results have been filtered and therefore standard deviation is of a SAMPLE (not the FULL POPULATION) set.
+            logSamples--;
+            if (logSamples > 0) {
+              logMean = logReturn / ((double)logSamples+1); // Still needs to be the arithmetic mean of log( returns ) ...
+              previousSample = 0.0;
+              currentSample = 0.0;
+              logReturn = 0.0;
+              foreach (TaoSamplePoint tmpSamplePoint in allSamplePoints) {
+                if (tmpSamplePoint.overallPassRate > 0.0 && lowerBollingerBand <= tmpSamplePoint.overallPassRate && tmpSamplePoint.overallPassRate <= upperBollingerBand) {
+                  previousSample = currentSample;
+                  currentSample = tmpSamplePoint.overallPassRate;
+                }
+                if (previousSample > 0.0) {
+                  logReturn = logReturn + Math.Pow(Math.Log(currentSample / previousSample) - logMean, 2);
+                }
+              }
+              // Assumption: adjust the future implied to reflect 10 iterations forward (key iteration points 10, 20, 50, 100, 200).
+              actualResults.Rows[i]["impliedVolatility"] = Math.Sqrt(logReturn / (double)logSamples) * Math.Sqrt(10.0) * 100.0;
+            }
+          }
+        }
+        // The calcualtion of taoSuiteIterations is based on file count and not the actual number of tests. It can be therefore, that
+        // the actual number of tests performed is less than the file count.  In this case, we need to correct the taoSuiteIterations
+        // from earlier assumptions.
+        actualResults.Rows[i]["taoSuiteIterations"] = actualSamplePointsUsed;
+        calcProgress.setProgressAction(3, "3) Calculating statistics ... DONE");
+        calcProgress.Refresh();
+        cacheResults.Rows.Add(
+          actualResults.Rows[i]["taoSuiteName"].ToString(),
+          actualResults.Rows[i]["taoSuiteFirstRun"].ToString(),
+          actualResults.Rows[i]["taoSuiteLastRun"].ToString(),
+          Convert.ToInt32(actualResults.Rows[i]["taoSuiteIterations"].ToString()),
+          Convert.ToDouble(actualResults.Rows[i]["passRate"].ToString()),
+          Convert.ToDouble(actualResults.Rows[i]["passRateDelta"].ToString()),
+          Convert.ToDouble(actualResults.Rows[i]["passRateMean"].ToString()),
+          Convert.ToDouble(actualResults.Rows[i]["passRateStdDev"].ToString()),
+          Convert.ToDouble(actualResults.Rows[i]["lowerBollingerBand"].ToString()),
+          Convert.ToDouble(actualResults.Rows[i]["upperBollingerBand"].ToString()),
+          Convert.ToDouble(actualResults.Rows[i]["impliedVolatility"].ToString()));
+        // TODO: persist each Tao Suite bar and line chart sample data...
+        persistSampleData(actualResults.Rows[i]["taoSuiteName"].ToString(), allSamplePoints);
       }
       // Persist cache data
       persistCacheDataTable();
@@ -243,10 +450,6 @@ namespace taoGUI {
       calcProgress.Dispose();
       GC.Collect();
       Cursor.Current = Cursors.Default;
-    }
-
-    ~taoReportCache() {
-      // Clean up...
     }
 
   }

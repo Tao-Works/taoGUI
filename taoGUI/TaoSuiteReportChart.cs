@@ -58,59 +58,44 @@ namespace taoGUI {
       if (targetChartType == SeriesChartType.StackedColumn100) {
         passRateChart.Series.Add(seriesTrendLine);
       }
-      string taoSuiteOutputFolder = projectRootFolder + @"\taoSuite_Report";
-      string filePattern = taoSuite.Substring(0, taoSuite.IndexOf(".")) + "*" + dbInstance + ".xls";
-      string[] taoResults = System.IO.Directory.GetFiles(taoSuiteOutputFolder, filePattern);
-      var orderedResults = taoResults.OrderBy(f => f.ToString());
-      string taoGenerated = ""; // YYYY-MM-DD_HHMM format
-      taoProgressBar calcProgress = new taoProgressBar();
-      calcProgress.Show();
-      System.Windows.Forms.Cursor.Current = Cursors.WaitCursor;
-      int _upperLimit = calcProgress.getProgressUpperLimit();
-      int _progressStep = 1;
-      int _progressMax = orderedResults.Count<string>() * 1;
-      calcProgress.setProgressDescription("Processing Tao Suite Reports " + taoSuite + " at " + dbInstance + " instance" );
-      foreach ( string orderedResult in orderedResults) {
-        taoGenerated = orderedResult.Substring(orderedResult.LastIndexOf("\\") + 1);
-        taoGenerated = taoGenerated.Substring(taoGenerated.IndexOf(".") + 1);
-        taoGenerated = taoGenerated.Substring(0, taoGenerated.IndexOf("."));
-        calcProgress.setProgressAction(1, "- Report generated " + taoGenerated.Substring(0, 10) + " " + taoGenerated.Substring(11, 2) + ":" + taoGenerated.Substring(13, 2));
-        calcProgress.setProgressAction(2, "- Processing files " + _progressStep.ToString() + " out of " + _progressMax.ToString() + " total");
-        int progressMeter = (int)((double)_progressStep / (double)_progressMax * (double)_upperLimit);
-        calcProgress.setProgress(progressMeter);
-        _progressStep++;
-        int _year = Convert.ToInt32(taoGenerated.Substring(0, 4));
-        int _month = Convert.ToInt32(taoGenerated.Substring(5, 2));
-        int _day = Convert.ToInt32(taoGenerated.Substring(8, 2));
-        int _hour = Convert.ToInt32(taoGenerated.Substring(11, 2));
-        int _minute = Convert.ToInt32(taoGenerated.Substring(13, 2));
-        System.DateTime x = new System.DateTime(_year, _month, _day, _hour, _minute, 0);
-        taoReportReader taoSuiteResults = new taoReportReader(orderedResult);
-        int taoTotalTests = taoSuiteResults.getTotalTests();
-        int taoTestPass = taoSuiteResults.getPairsThatAreEqual();
-        double taoTrendLine = (double)Decimal.Round((Decimal)taoSuiteResults.getOverallPassRate(),2);
-        if (taoTotalTests > 0) {
-          DataPoint pointPass = new DataPoint();
-          pointPass.SetValueXY(x.ToOADate(), taoTestPass);
-          pointPass.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTestPass.ToString() + " PASS");
-          seriesPass.Points.Add(pointPass);
-          DataPoint pointFail = new DataPoint();
-          pointFail.SetValueXY(x.ToOADate(), (taoTotalTests - taoTestPass));
-          pointFail.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), (taoTotalTests - taoTestPass).ToString() + " FAIL");
-          seriesFail.Points.Add(pointFail);
-          if (targetChartType == SeriesChartType.StackedColumn100) {
-            DataPoint pointTrend = new DataPoint();
-            pointTrend.SetValueXY(x.ToOADate(), taoTrendLine);
-            pointTrend.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTrendLine.ToString() + " % pass");
-            seriesTrendLine.Points.Add(pointTrend);
+      string chartLocation = Application.StartupPath + @"\taoGUI.resources\chart_" + projectRootFolder.Substring(projectRootFolder.LastIndexOf("\\") + 1) + "_" + dbInstance + "_" + taoSuite.Substring(0, taoSuite.IndexOf(".")) + ".tao";
+      if (System.IO.File.Exists(chartLocation)) {
+        using (Microsoft.VisualBasic.FileIO.TextFieldParser parser = new Microsoft.VisualBasic.FileIO.TextFieldParser(chartLocation)) {
+          parser.TextFieldType = Microsoft.VisualBasic.FileIO.FieldType.Delimited;
+          parser.SetDelimiters(";");
+          string[] fields = parser.ReadFields();    // Skip header...
+          while (!parser.EndOfData) {
+            fields = parser.ReadFields();
+            int _year = Convert.ToInt32(fields[0]);
+            int _month = Convert.ToInt32(fields[1]);
+            int _day = Convert.ToInt32(fields[2]);
+            int _hour = Convert.ToInt32(fields[3]);
+            int _minute = Convert.ToInt32(fields[4]);
+            System.DateTime x = new System.DateTime(_year, _month, _day, _hour, _minute, 0);
+            int taoTotalTests = Convert.ToInt32(fields[5]);
+            int taoTestPass = Convert.ToInt32(fields[6]);
+            double taoTrendLine = (double)Math.Round(Convert.ToDouble(fields[7]),2);
+            if (taoTotalTests > 0) {
+              DataPoint pointPass = new DataPoint();
+              pointPass.SetValueXY(x.ToOADate(), taoTestPass);
+              pointPass.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTestPass.ToString() + " PASS");
+              seriesPass.Points.Add(pointPass);
+              DataPoint pointFail = new DataPoint();
+              pointFail.SetValueXY(x.ToOADate(), (taoTotalTests - taoTestPass));
+              pointFail.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), (taoTotalTests - taoTestPass).ToString() + " FAIL");
+              seriesFail.Points.Add(pointFail);
+              if (targetChartType == SeriesChartType.StackedColumn100) {
+                DataPoint pointTrend = new DataPoint();
+                pointTrend.SetValueXY(x.ToOADate(), taoTrendLine);
+                pointTrend.ToolTip = string.Format("{0}, {1}", x.ToShortDateString() + " " + x.ToShortTimeString(), taoTrendLine.ToString() + " % pass");
+                seriesTrendLine.Points.Add(pointTrend);
+              }
+            }
           }
         }
       }
       passRateChart.Invalidate();
-      calcProgress.Hide();
-      calcProgress.Dispose();
-      GC.Collect();
-      System.Windows.Forms.Cursor.Current = Cursors.Default;
     }
+
   }
 }

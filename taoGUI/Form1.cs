@@ -374,32 +374,36 @@ namespace taoGUI {
     }
 
     private void changeDbConnectionTaoSuiteReports(object sender, EventArgs e, string appId, string projectRootFolder, string dbInstance, DataTable tableTaoSuiteReports) {
-      taoReportCache tmpCacheStatus = new taoReportCache(projectRootFolder, appId, dbInstance);
+      TaoReportCache tmpCacheStatus = new TaoReportCache(projectRootFolder, appId, dbInstance);
       if (!tmpCacheStatus.isCacheCurrent()) {
         MessageBox.Show("The statistics for the Tao Suite Reports need re-calculating.  This will take a short while (please be patient).", "Re-calculating Statistics", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        tmpCacheStatus.updateActualResults();
+        tmpCacheStatus.updateCacheResults();
       }
       DataTable tmpCache = tmpCacheStatus.getCacheDataTable();
       int totalRows = tmpCache.Rows.Count;
       for (int i = 0; i < totalRows; i++) {
-        tableTaoSuiteReports.Rows[i]["TaoSuite"] = tmpCache.Rows[i]["TaoSuite"];
-        tableTaoSuiteReports.Rows[i]["FirstRun"] = tmpCache.Rows[i]["FirstRun"];
-        tableTaoSuiteReports.Rows[i]["LastRun"] = tmpCache.Rows[i]["LastRun"];
-        tableTaoSuiteReports.Rows[i]["Iterations"] = tmpCache.Rows[i]["Iterations"];
-        tableTaoSuiteReports.Rows[i]["PassRate"] = tmpCache.Rows[i]["PassRate"];
-        tableTaoSuiteReports.Rows[i]["PassDelta"] = tmpCache.Rows[i]["PassDelta"];
-        tableTaoSuiteReports.Rows[i]["Volatility"] = tmpCache.Rows[i]["Volatility"];
+        tableTaoSuiteReports.Rows[i]["taoSuiteName"] = tmpCache.Rows[i]["taoSuiteName"];
+        tableTaoSuiteReports.Rows[i]["taoSuiteFirstRun"] = tmpCache.Rows[i]["taoSuiteFirstRun"];
+        tableTaoSuiteReports.Rows[i]["taoSuiteLastRun"] = tmpCache.Rows[i]["taoSuiteLastRun"];
+        tableTaoSuiteReports.Rows[i]["taoSuiteIterations"] = tmpCache.Rows[i]["taoSuiteIterations"];
+        tableTaoSuiteReports.Rows[i]["passRate"] = tmpCache.Rows[i]["passRate"];
+        tableTaoSuiteReports.Rows[i]["passRateDelta"] = tmpCache.Rows[i]["passRateDelta"];
+        tableTaoSuiteReports.Rows[i]["passRateMean"] = tmpCache.Rows[i]["passRateMean"];
+        tableTaoSuiteReports.Rows[i]["passRateStdDev"] = tmpCache.Rows[i]["passRateStdDev"];
+        tableTaoSuiteReports.Rows[i]["lowerBollingerBand"] = tmpCache.Rows[i]["lowerBollingerBand"];
+        tableTaoSuiteReports.Rows[i]["upperBollingerBand"] = tmpCache.Rows[i]["upperBollingerBand"];
+        tableTaoSuiteReports.Rows[i]["impliedVolatility"] = tmpCache.Rows[i]["impliedVolatility"];
       }
     }
 
     private void taoSheets_CellFormatting(object sender, System.Windows.Forms.DataGridViewCellFormattingEventArgs e, DataGridView taoSheetData) {
-      if (taoSheetData.Columns[e.ColumnIndex].Name.Equals("PassRate")) {
+      if (taoSheetData.Columns[e.ColumnIndex].Name.Equals("passRate")) {
         if (0.0 < (double)e.Value && (double)e.Value < 100.0) {
           e.CellStyle.BackColor = Color.LemonChiffon;
           e.CellStyle.SelectionBackColor = Color.DarkOrange;
         }
       }
-      if (taoSheetData.Columns[e.ColumnIndex].Name.Equals("PassDelta")) {
+      if (taoSheetData.Columns[e.ColumnIndex].Name.Equals("passRateDelta")) {
         if ((double)e.Value < 0.0) {
           e.CellStyle.BackColor = Color.LightPink;
           e.CellStyle.SelectionBackColor = Color.DarkRed;
@@ -470,10 +474,10 @@ namespace taoGUI {
       }
       string dbInstance = comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString();
       // Check cache status and alert if update necessary...
-      taoReportCache currentCacheStatus = new taoReportCache(projectRootFolder, appId, dbInstance);
+      TaoReportCache currentCacheStatus = new TaoReportCache(projectRootFolder, appId, dbInstance);
       if (!currentCacheStatus.isCacheCurrent()) {
         MessageBox.Show("The statistics for the Tao Suite Reports need re-calculating.  This will take a short while (please be patient).", "Re-calculating Statistics", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        currentCacheStatus.updateActualResults();
+        currentCacheStatus.updateCacheResults();
       }
       tableTaoSuiteReports = currentCacheStatus.getCacheDataTable();
       // Register a method on the event "change list" and pass data table as parameter
@@ -493,23 +497,35 @@ namespace taoGUI {
       tabPageContent.Controls.Add(comboDbConnection);
       tabPageContent.Controls.Add(taoSheets);
       // Formats
-      taoSheets.Columns["TaoSuite"].HeaderText = "Tao Suite";
-      taoSheets.Columns["FirstRun"].HeaderText = "First Run";
-      taoSheets.Columns["LastRun"].HeaderText = "Last Run";
-      taoSheets.Columns["Iterations"].HeaderText = "Iterations";
-      taoSheets.Columns["PassRate"].HeaderText = "Pass Rate";
-      taoSheets.Columns["PassDelta"].HeaderText = "Pass Delta";
-      taoSheets.Columns["Volatility"].HeaderText = "Volatility";
-      taoSheets.Columns["FirstRun"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-      taoSheets.Columns["LastRun"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-      taoSheets.Columns["Iterations"].DefaultCellStyle.Format = "N0";
-      taoSheets.Columns["Iterations"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-      taoSheets.Columns["PassRate"].DefaultCellStyle.Format = "N4";
-      taoSheets.Columns["PassRate"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-      taoSheets.Columns["PassDelta"].DefaultCellStyle.Format = "N4";
-      taoSheets.Columns["PassDelta"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-      taoSheets.Columns["Volatility"].DefaultCellStyle.Format = "N4";
-      taoSheets.Columns["Volatility"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["taoSuiteName"].HeaderText = "Tao Suite";
+      taoSheets.Columns["taoSuiteFirstRun"].HeaderText = "First Run";
+      taoSheets.Columns["taoSuiteLastRun"].HeaderText = "Last Run";
+      taoSheets.Columns["taoSuiteIterations"].HeaderText = "Iterations";
+      taoSheets.Columns["passRate"].HeaderText = "Pass Rate";
+      taoSheets.Columns["passRateDelta"].HeaderText = "Delta";
+      taoSheets.Columns["passRateMean"].HeaderText = "Mean";
+      taoSheets.Columns["passRateStdDev"].HeaderText = "Std. Dev.";
+      taoSheets.Columns["lowerBollingerBand"].HeaderText = "Lower Band";
+      taoSheets.Columns["upperBollingerBand"].HeaderText = "Upper Band";
+      taoSheets.Columns["impliedVolatility"].HeaderText = "Volatility";
+      taoSheets.Columns["taoSuiteFirstRun"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+      taoSheets.Columns["taoSuiteLastRun"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+      taoSheets.Columns["taoSuiteIterations"].DefaultCellStyle.Format = "N0";
+      taoSheets.Columns["taoSuiteIterations"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["passRate"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["passRate"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["passRateDelta"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["passRateDelta"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["passRateMean"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["passRateMean"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["passRateStdDev"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["passRateStdDev"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["lowerBollingerBand"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["lowerBollingerBand"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["upperBollingerBand"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["upperBollingerBand"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+      taoSheets.Columns["impliedVolatility"].DefaultCellStyle.Format = "N4";
+      taoSheets.Columns["impliedVolatility"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
       taoSheets.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler((sender, e) => taoSheets_CellFormatting(sender, e, taoSheets));
       // Resize "works" once the data is painted to the control
       taoSheets.AutoResizeColumns();
