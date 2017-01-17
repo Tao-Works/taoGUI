@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace taoGUI {
-  class taoReportReader {
+  class TaoReportReader {
     private int _sumTotalTests;
     private int _sumPairsThatAreEqual;
     private double _overallPassRate;
@@ -18,7 +18,7 @@ namespace taoGUI {
       _overallPassRate = 0.0;
     }
 
-    public taoReportReader(string taoReportFilename) {
+    public TaoReportReader(string taoReportFilename) {
       Excel.Workbook workbook = null;
       Excel.Worksheet sheet = null;
       try {
@@ -74,7 +74,7 @@ namespace taoGUI {
       return _sumPairsThatAreEqual;
     }
 
-    ~taoReportReader() {
+    ~TaoReportReader() {
       // Clean up...
     }
 
