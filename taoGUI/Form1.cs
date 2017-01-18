@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Excel = Microsoft.Office.Interop.Excel;
 using System.Windows.Forms.DataVisualization.Charting;
 using Newtonsoft.Json;
 using System.IO;
@@ -16,32 +15,13 @@ using static taoGUI.Json.TaoJsonConfigReader;
 
 namespace taoGUI {
   public partial class Form1 : Form {
-    public static string TAO_PROJECT_FILE = Application.StartupPath + @"\taoGUI.resources\projects.tao";
-    public static Excel.Application _taoApp = null;
 
-    // private int countProjectsInTreeView;
+    public static string TAO_PROJECT_FILE = Application.StartupPath + @"\taoGUI.resources\projects.tao";
+
     private TabControl tabCtrlAppStatus;                                            // This is the main "tab control" container for status reports
     private List<TabPage> appStatusTabPages = new List<TabPage>();                  // This is the tab pages, each represent one specific Tao App.
     private List<TabControl> statusReportsTabControl = new List<TabControl>();      // This is a sub "tab control" contained within each Tao App.
     private List<TabPage> statusReportsTabPages = new List<TabPage>();              // This is the sub tab pages per report per Tao Application.
-
-    /* private string showProjectApplicationInTreeView(string line) {
-       string applicationId = getAppId(line);
-       taoProjectView.Nodes.Add(applicationId, applicationId);
-       taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|status", "Application Status");
-       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|reports", "Tao Suite Reports");
-       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|summary", "Summary");
-       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|velocity", "Velocity");
-       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|stability", "Stability");
-       taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|tao", "Tao Sheets");
-       taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|file", "File Structure");
-       return applicationId;
-     } */
-
-    /* private string getAppId(string line) {
-      string appId = line.Substring(line.IndexOf(":") + 3);
-      return appId.Substring(0, appId.Length - 2);
-    } */
 
     private void walkDirectoryStructure(System.IO.DirectoryInfo currentFolder, TreeNode currentNode, string keyName) {
       int nodeIndex = 0;
@@ -53,22 +33,9 @@ namespace taoGUI {
       }
     }
 
-    /*    private void showFileStructureInTreeView(string line, string applicationId, string keyName) {
-          string rootDirectory = line.Substring(line.IndexOf(":") + 3);
-          rootDirectory = rootDirectory.Substring(0, rootDirectory.Length - 1);
-          string appFolderNmae = rootDirectory + "/" + applicationId;
-          if (System.IO.Directory.Exists(appFolderNmae)) {
-            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(appFolderNmae);
-            walkDirectoryStructure(di, taoProjectView.Nodes[countProjectsInTreeView].Nodes[2], keyName);
-          }
-        } */
-
     public void showProjectsInTreeView() {
-      //      countProjectsInTreeView = 0;
       taoProjectView.Nodes.Clear();
       if (File.Exists(TAO_PROJECT_FILE)) {
-        // Read the json file into a list of TaoProjectCtx objects
-        // @Dave: Use the list (instead of parsing the json file yourself 
         Dictionary<string, TaoJsonProjectCtx> projectContextMap = TaoJsonConfigReader.getTaoProjectCtxMap(TAO_PROJECT_FILE);
         foreach (TaoJsonProjectCtx ctx in projectContextMap.Values) {
           string applicationId = ctx.applicationId;
@@ -81,34 +48,12 @@ namespace taoGUI {
           l1_node.Nodes.Add(applicationId + "|status|stability", "Stability");
           prjNode.Nodes.Add(applicationId + "|tao", "Tao Sheets");
           TreeNode fileStrctNode = prjNode.Nodes.Add(applicationId + "|file", "File Structure");
-
           string appFolderName = ctx.getAppFolder();
           if (System.IO.Directory.Exists(appFolderName)) {
             System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(appFolderName);
             walkDirectoryStructure(di, fileStrctNode, applicationId + "|file");
           }
-
         }
-
-        //        string line;
-        //        System.IO.StreamReader file = new System.IO.StreamReader(fileLocation);
-        //        while ((line = file.ReadLine()) != null) {
-        //          if (line.Contains("\"applicationId\"")) {
-        //            string applicationId = showProjectApplicationInTreeView(line);
-        //            if ((line = file.ReadLine()) != null) {
-        //              if (line.Contains("\"description\"")) {
-        //                showProjectDescriptionToolTip(line);
-        //              }
-        //            }
-        //            if ((line = file.ReadLine()) != null) {
-        //              if (line.Contains("\"folder\"")) {
-        //                showFileStructureInTreeView(line, applicationId, applicationId + "|file");
-        //                countProjectsInTreeView++;
-        //              }
-        //            }
-        //          }
-        //        }
-        //        file.Close();
       }
     }
 
@@ -175,8 +120,7 @@ namespace taoGUI {
       string tempFile = System.IO.Path.GetTempFileName();
       using (var sr = new System.IO.StreamReader(fileLocation))
       using (var sw = new System.IO.StreamWriter(tempFile)) {
-        string line;
-
+        string line = string.Empty;
         while ((line = sr.ReadLine()) != null) {
           if ((line.Contains("\"applicationId\"") && line.Contains(appName))) {
             // Skip lines "description" and "folder" ...
@@ -193,15 +137,10 @@ namespace taoGUI {
 
     public Form1() {
       InitializeComponent();
-      _taoApp = new Excel.Application();
-      _taoApp.ScreenUpdating = false;   // For efficiency and performance
-      _taoApp.Visible = false;
       showProjectsInTreeView();
     }
 
     ~Form1() {
-      _taoApp.Quit();
-      System.Runtime.InteropServices.Marshal.ReleaseComObject(_taoApp);
       GC.Collect();
     }
 
@@ -408,17 +347,17 @@ namespace taoGUI {
       for (int i = 0; i < totalRows; i++) {
         var t = tableTaoSuiteReports.Rows[i];
         var s = tmpCache.Rows[i];
-        s["taoSuiteName"] = s["taoSuiteName"];
-        s["taoSuiteFirstRun"] = s["taoSuiteFirstRun"];
-        s["taoSuiteLastRun"] = s["taoSuiteLastRun"];
-        s["taoSuiteIterations"] = s["taoSuiteIterations"];
-        s["passRate"] = s["passRate"];
-        s["passRateDelta"] = s["passRateDelta"];
-        s["passRateMean"] = s["passRateMean"];
-        s["passRateStdDev"] = s["passRateStdDev"];
-        s["lowerBollingerBand"] = s["lowerBollingerBand"];
-        s["upperBollingerBand"] = s["upperBollingerBand"];
-        s["impliedVolatility"] = s["impliedVolatility"];
+        t["taoSuiteName"] = s["taoSuiteName"];
+        t["taoSuiteFirstRun"] = s["taoSuiteFirstRun"];
+        t["taoSuiteLastRun"] = s["taoSuiteLastRun"];
+        t["taoSuiteIterations"] = s["taoSuiteIterations"];
+        t["passRate"] = s["passRate"];
+        t["passRateDelta"] = s["passRateDelta"];
+        t["passRateMean"] = s["passRateMean"];
+        t["passRateStdDev"] = s["passRateStdDev"];
+        t["lowerBollingerBand"] = s["lowerBollingerBand"];
+        t["upperBollingerBand"] = s["upperBollingerBand"];
+        t["impliedVolatility"] = s["impliedVolatility"];
       }
     }
 
