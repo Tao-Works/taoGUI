@@ -396,6 +396,40 @@ namespace taoGUI {
       }
     }
 
+    private void changeDgvFilter(object sender, EventArgs e, string dgvFilter, DataGridView taoSheetView) {
+      switch (dgvFilter) {
+        case @"Filter All Rows":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Empty;
+          break;
+        case @"Success - pass rate = 100%":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRate = 100 AND taoSuiteIterations > 0");
+          break;
+        case @"Failure - pass rate < 100%":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRate < 100 AND taoSuiteIterations > 0");
+          break;
+        case @"Moderate Failure - pass rate < mean":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRate < passRateMean AND taoSuiteIterations > 0");
+          break;
+        case @"Heavy Failure - pass rate < lower band":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRate < lowerBollingerBand AND taoSuiteIterations > 0");
+          break;
+        case @"Trending Up - delta > 0":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRateDelta > 0 AND taoSuiteIterations > 0");
+          break;
+        case @"Trending Down - delta < 0":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRateDelta < 0 AND taoSuiteIterations > 0");
+          break;
+        case @"Progress - pass < 100% and delta > 0":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRate < 100 AND passRateDelta > 0 AND taoSuiteIterations > 0");
+          break;
+        case @"Regress - pass < 100% and delta < 0":
+          (taoSheetView.DataSource as DataTable).DefaultView.RowFilter = string.Format(@"passRate < 100 AND passRateDelta < 0 AND taoSuiteIterations > 0");
+          break;
+        default:
+          break;
+      }
+    }
+
     private void taoSheets_CellFormatting(object sender, System.Windows.Forms.DataGridViewCellFormattingEventArgs e, DataGridView taoSheetData) {
       if (taoSheetData.Columns[e.ColumnIndex].Name.Equals("passRate")) {
         if (0.0 < (double)e.Value && (double)e.Value < 100.0) {
@@ -517,11 +551,16 @@ namespace taoGUI {
       }
     }
 
+    private void button_ExportTaoSuiteResults(object sender, EventArgs e) {
+    }
+
     private void addTabContentTaoSuiteReports(string appId, TabPage tabPageContent) {
+
       DataTable tableTaoSuiteReports;
       string projectRootFolder = getProjectFolderName(appId) + @"\" + appId;
       // Create a "ribbon" effect for various control items (like filters and search)
       tabPageContent.Padding = new Padding(0, 24, 0, 0);
+
       // Create a database selector so that users can switch between instances and compare results
       System.Windows.Forms.ComboBox comboDbConnection = new System.Windows.Forms.ComboBox();
       comboDbConnection.FormattingEnabled = true;
@@ -547,6 +586,27 @@ namespace taoGUI {
         }
       }
       string dbInstance = comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString();
+
+      // Create some filters so that user can focus on specific Tao Suite Result constellations
+      System.Windows.Forms.ComboBox comboDgvFilter = new System.Windows.Forms.ComboBox();
+      comboDgvFilter.FormattingEnabled = true;
+      comboDgvFilter.Location = new System.Drawing.Point(4, 28);
+      comboDgvFilter.Name = "comboDgvFilter." + appId;
+      comboDgvFilter.Size = new System.Drawing.Size(204, 21);
+      comboDgvFilter.TabIndex = 0;
+      comboDgvFilter.Top = 0;
+      comboDgvFilter.Left = 204;
+      comboDgvFilter.Items.Add("Filter All Rows");
+      comboDgvFilter.Items.Add("Success - pass rate = 100%");
+      comboDgvFilter.Items.Add("Failure - pass rate < 100%");
+      comboDgvFilter.Items.Add("Moderate Failure - pass rate < mean");
+      comboDgvFilter.Items.Add("Heavy Failure - pass rate < lower band");
+      comboDgvFilter.Items.Add("Trending Up - delta > 0");
+      comboDgvFilter.Items.Add("Trending Down - delta < 0");
+      comboDgvFilter.Items.Add("Progress - pass < 100% and delta > 0");
+      comboDgvFilter.Items.Add("Regress - pass < 100% and delta < 0");
+      comboDgvFilter.SelectedIndex = 0;
+
       // Check cache status and alert if update necessary...
       TaoReportCache currentCacheStatus = new TaoReportCache(projectRootFolder, appId, dbInstance);
       if (!currentCacheStatus.isCacheCurrent()) {
@@ -569,6 +629,7 @@ namespace taoGUI {
       taoSheets.Dock = System.Windows.Forms.DockStyle.Fill;
       // Attach the data grid view to a container, add pading top to the container (24px) to give room to some controls (e.g. drop down list and search)
       tabPageContent.Controls.Add(comboDbConnection);
+      tabPageContent.Controls.Add(comboDgvFilter);
       tabPageContent.Controls.Add(taoSheets);
       // Formats
       taoSheets.Columns["taoSuiteName"].HeaderText = "Tao Suite";
@@ -603,15 +664,18 @@ namespace taoGUI {
       taoSheets.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler((sender, e) => taoSheets_CellFormatting(sender, e, taoSheets));
       // Resize "works" once the data is painted to the control
       taoSheets.AutoResizeColumns();
+      // Register a method to filter the data grid view by setting the data view selectors (internal)
+      comboDgvFilter.SelectedValueChanged += new System.EventHandler((sender, e) => changeDgvFilter(sender, e, comboDgvFilter.Items[comboDgvFilter.SelectedIndex].ToString(), taoSheets));
+
       // Buttons ...
       System.Windows.Forms.Button buttonTaoSuiteReportPerc = new System.Windows.Forms.Button();
       buttonTaoSuiteReportPerc.Image = global::taoGUI.Properties.Resources.Percent;
-      buttonTaoSuiteReportPerc.Location = new System.Drawing.Point(208, -1);
+      buttonTaoSuiteReportPerc.Location = new System.Drawing.Point(414, -1);
       buttonTaoSuiteReportPerc.Name = "buttonTaoSuiteReportPerc";
       buttonTaoSuiteReportPerc.Size = new System.Drawing.Size(24, 23);
       buttonTaoSuiteReportPerc.TabIndex = 0;
       buttonTaoSuiteReportPerc.Top = -1;
-      buttonTaoSuiteReportPerc.Left = 208;
+      buttonTaoSuiteReportPerc.Left = 414;
       buttonTaoSuiteReportPerc.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonTaoSuiteReportPerc.UseVisualStyleBackColor = true;
       buttonTaoSuiteReportPerc.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistory(sender, e, SeriesChartType.StackedColumn100, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
@@ -619,12 +683,12 @@ namespace taoGUI {
 
       System.Windows.Forms.Button buttonTaoSuiteReportAct = new System.Windows.Forms.Button();
       buttonTaoSuiteReportAct.Image = global::taoGUI.Properties.Resources.Stats2;
-      buttonTaoSuiteReportAct.Location = new System.Drawing.Point(235, -1);
+      buttonTaoSuiteReportAct.Location = new System.Drawing.Point(441, -1);
       buttonTaoSuiteReportAct.Name = "buttonTaoSuiteReportAct";
       buttonTaoSuiteReportAct.Size = new System.Drawing.Size(24, 23);
       buttonTaoSuiteReportAct.TabIndex = 0;
       buttonTaoSuiteReportAct.Top = -1;
-      buttonTaoSuiteReportAct.Left = 235;
+      buttonTaoSuiteReportAct.Left = 441;
       buttonTaoSuiteReportAct.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonTaoSuiteReportAct.UseVisualStyleBackColor = true;
       buttonTaoSuiteReportAct.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistory(sender, e, SeriesChartType.StackedArea, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
@@ -632,12 +696,12 @@ namespace taoGUI {
 
       System.Windows.Forms.Button buttonTaoSuiteReportPoll = new System.Windows.Forms.Button();
       buttonTaoSuiteReportPoll.Image = global::taoGUI.Properties.Resources.Poll;
-      buttonTaoSuiteReportPoll.Location = new System.Drawing.Point(262, -1);
+      buttonTaoSuiteReportPoll.Location = new System.Drawing.Point(468, -1);
       buttonTaoSuiteReportPoll.Name = "buttonTaoSuiteReportPoll";
       buttonTaoSuiteReportPoll.Size = new System.Drawing.Size(24, 23);
       buttonTaoSuiteReportPoll.TabIndex = 0;
       buttonTaoSuiteReportPoll.Top = -1;
-      buttonTaoSuiteReportPoll.Left = 262;
+      buttonTaoSuiteReportPoll.Left = 468;
       buttonTaoSuiteReportPoll.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonTaoSuiteReportPoll.UseVisualStyleBackColor = true;
       buttonTaoSuiteReportPoll.Click += new EventHandler((sender, e) => button_ShowTaoSuiteStatistics(sender, e, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
@@ -645,16 +709,29 @@ namespace taoGUI {
 
       System.Windows.Forms.Button buttonTaoSuiteReportHist = new System.Windows.Forms.Button();
       buttonTaoSuiteReportHist.Image = global::taoGUI.Properties.Resources.Dots_Up;
-      buttonTaoSuiteReportHist.Location = new System.Drawing.Point(289, -1);
+      buttonTaoSuiteReportHist.Location = new System.Drawing.Point(495, -1);
       buttonTaoSuiteReportHist.Name = "buttonTaoSuiteReportHist";
       buttonTaoSuiteReportHist.Size = new System.Drawing.Size(24, 23);
       buttonTaoSuiteReportHist.TabIndex = 0;
       buttonTaoSuiteReportHist.Top = -1;
-      buttonTaoSuiteReportHist.Left = 289;
+      buttonTaoSuiteReportHist.Left = 495;
       buttonTaoSuiteReportHist.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonTaoSuiteReportHist.UseVisualStyleBackColor = true;
       buttonTaoSuiteReportHist.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistogram(sender, e, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
       tabPageContent.Controls.Add(buttonTaoSuiteReportHist);
+
+      System.Windows.Forms.Button buttonTaoSuiteReportExport = new System.Windows.Forms.Button();
+      buttonTaoSuiteReportExport.Image = global::taoGUI.Properties.Resources.Table;
+      buttonTaoSuiteReportExport.Location = new System.Drawing.Point(522, -1);
+      buttonTaoSuiteReportExport.Name = "buttonTaoSuiteReportExport";
+      buttonTaoSuiteReportExport.Size = new System.Drawing.Size(24, 23);
+      buttonTaoSuiteReportExport.TabIndex = 0;
+      buttonTaoSuiteReportExport.Top = -1;
+      buttonTaoSuiteReportExport.Left = 522;
+      buttonTaoSuiteReportExport.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonTaoSuiteReportExport.UseVisualStyleBackColor = true;
+      buttonTaoSuiteReportExport.Click += new EventHandler((sender, e) => button_ExportTaoSuiteResults(sender, e));
+      tabPageContent.Controls.Add(buttonTaoSuiteReportExport);
 
       // Finally set up button tool-tips...
       ToolTip toolTip1 = new ToolTip();
@@ -666,10 +743,12 @@ namespace taoGUI {
       toolTip1.ShowAlways = true;
       // Set up the ToolTip text for the Combobox and Buttons.
       toolTip1.SetToolTip(comboDbConnection, "Select the database instance relevant to the Tao Suite Reports");
+      toolTip1.SetToolTip(comboDgvFilter, "Filter Tao Suite Reports");
       toolTip1.SetToolTip(buttonTaoSuiteReportPerc, "Display the history of pass rates (as a stacked-column percentage chart).");
       toolTip1.SetToolTip(buttonTaoSuiteReportAct, "Display the history of pass rates (as stacked area chart)");
       toolTip1.SetToolTip(buttonTaoSuiteReportPoll, "Display pass rates, with mean, standard deviation and volatiltiy bands");
       toolTip1.SetToolTip(buttonTaoSuiteReportHist, "Display pass rates histogram (about the pass rate mean) with standard deviation");
+      toolTip1.SetToolTip(buttonTaoSuiteReportExport, "Export the Tao Suite Reports view to Microsoft Excel");
     }
 
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {
