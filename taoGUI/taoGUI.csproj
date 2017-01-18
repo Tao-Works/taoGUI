@@ -66,6 +66,7 @@
     <Compile Include="AboutBox1.Designer.cs">
       <DependentUpon>AboutBox1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Json\TaoJsonConfigReader.cs" />
     <Compile Include="TaoBeanReader\TaoBeanReader.cs" />
     <Compile Include="TaoBeanReader\TaoBeanReader_TEST.cs" />
     <Compile Include="taoProgressBar.cs">

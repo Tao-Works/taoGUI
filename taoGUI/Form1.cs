@@ -11,6 +11,8 @@ using Excel = Microsoft.Office.Interop.Excel;
 using System.Windows.Forms.DataVisualization.Charting;
 using Newtonsoft.Json;
 using System.IO;
+using taoGUI.Json;
+using static taoGUI.Json.TaoJsonConfigReader;
 
 namespace taoGUI {
   public partial class Form1 : Form {
@@ -61,45 +63,14 @@ namespace taoGUI {
           }
         } */
 
-    public class TaoProjectCtx {
-      public string applicationId { get; set; }
-      public string description { get; set; }
-      public string folder { get; set; }
-      public string getAppFolder() {
-        return folder + "/" + applicationId;
-      }
-    }
-
-    private Dictionary<string, TaoProjectCtx> getTaoProjectCtxMap(string fileLocation) {
-      var projectContextList = new List<TaoProjectCtx>();
-      StringBuilder sb = new StringBuilder();
-      if (File.Exists(fileLocation)) {
-        foreach (string line in File.ReadAllLines(fileLocation)) {
-          if (line.StartsWith("#")) {
-          } else {
-            string l = line.Replace(@"\", @"\\");
-            sb.Append(l);
-            sb.Append("\n");
-          }
-        }
-        string jsonStr = sb.ToString();
-        projectContextList = JsonConvert.DeserializeObject<List<TaoProjectCtx>>(jsonStr);
-      }
-      var result = new Dictionary<string, TaoProjectCtx>();
-      foreach (TaoProjectCtx ctx in projectContextList) {
-        result.Add(ctx.applicationId, ctx);
-      }
-      return result;
-    }
-
     public void showProjectsInTreeView() {
       //      countProjectsInTreeView = 0;
       taoProjectView.Nodes.Clear();
       if (File.Exists(TAO_PROJECT_FILE)) {
         // Read the json file into a list of TaoProjectCtx objects
         // @Dave: Use the list (instead of parsing the json file yourself 
-        Dictionary<string, TaoProjectCtx> projectContextMap = getTaoProjectCtxMap(TAO_PROJECT_FILE);
-        foreach (TaoProjectCtx ctx in projectContextMap.Values) {
+        Dictionary<string, TaoJsonProjectCtx> projectContextMap = TaoJsonConfigReader.getTaoProjectCtxMap(TAO_PROJECT_FILE);
+        foreach (TaoJsonProjectCtx ctx in projectContextMap.Values) {
           string applicationId = ctx.applicationId;
           TreeNode prjNode = taoProjectView.Nodes.Add(applicationId, applicationId);
           prjNode.ToolTipText = applicationId;
@@ -435,17 +406,19 @@ namespace taoGUI {
       DataTable tmpCache = tmpCacheStatus.getCacheDataTable();
       int totalRows = tmpCache.Rows.Count;
       for (int i = 0; i < totalRows; i++) {
-        tableTaoSuiteReports.Rows[i]["taoSuiteName"] = tmpCache.Rows[i]["taoSuiteName"];
-        tableTaoSuiteReports.Rows[i]["taoSuiteFirstRun"] = tmpCache.Rows[i]["taoSuiteFirstRun"];
-        tableTaoSuiteReports.Rows[i]["taoSuiteLastRun"] = tmpCache.Rows[i]["taoSuiteLastRun"];
-        tableTaoSuiteReports.Rows[i]["taoSuiteIterations"] = tmpCache.Rows[i]["taoSuiteIterations"];
-        tableTaoSuiteReports.Rows[i]["passRate"] = tmpCache.Rows[i]["passRate"];
-        tableTaoSuiteReports.Rows[i]["passRateDelta"] = tmpCache.Rows[i]["passRateDelta"];
-        tableTaoSuiteReports.Rows[i]["passRateMean"] = tmpCache.Rows[i]["passRateMean"];
-        tableTaoSuiteReports.Rows[i]["passRateStdDev"] = tmpCache.Rows[i]["passRateStdDev"];
-        tableTaoSuiteReports.Rows[i]["lowerBollingerBand"] = tmpCache.Rows[i]["lowerBollingerBand"];
-        tableTaoSuiteReports.Rows[i]["upperBollingerBand"] = tmpCache.Rows[i]["upperBollingerBand"];
-        tableTaoSuiteReports.Rows[i]["impliedVolatility"] = tmpCache.Rows[i]["impliedVolatility"];
+        var t = tableTaoSuiteReports.Rows[i];
+        var s = tmpCache.Rows[i];
+        s["taoSuiteName"] = s["taoSuiteName"];
+        s["taoSuiteFirstRun"] = s["taoSuiteFirstRun"];
+        s["taoSuiteLastRun"] = s["taoSuiteLastRun"];
+        s["taoSuiteIterations"] = s["taoSuiteIterations"];
+        s["passRate"] = s["passRate"];
+        s["passRateDelta"] = s["passRateDelta"];
+        s["passRateMean"] = s["passRateMean"];
+        s["passRateStdDev"] = s["passRateStdDev"];
+        s["lowerBollingerBand"] = s["lowerBollingerBand"];
+        s["upperBollingerBand"] = s["upperBollingerBand"];
+        s["impliedVolatility"] = s["impliedVolatility"];
       }
     }
 
@@ -587,9 +560,9 @@ namespace taoGUI {
       comboDbConnection.Items.Add("All Database Connections");
       comboDbConnection.SelectedIndex = 0;
       // Read the connection files in the project config area
-      string taoDbConnections = projectRootFolder + @"\conf";
-      if (System.IO.Directory.Exists(taoDbConnections)) {
-        string[] dbConnections = System.IO.Directory.GetFiles(taoDbConnections);
+      string dirLocOfDbConnection = projectRootFolder + @"\conf";
+      if (System.IO.Directory.Exists(dirLocOfDbConnection)) {
+        string[] dbConnections = System.IO.Directory.GetFiles(dirLocOfDbConnection);
         foreach (string fileName in dbConnections) {
           string ConnectionName = fileName.Substring(fileName.LastIndexOf("\\") + 1);
           if (ConnectionName.Contains("Connection.")) {
