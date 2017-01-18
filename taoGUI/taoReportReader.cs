@@ -52,6 +52,8 @@ namespace taoGUI {
           }
         }
       } catch (Exception ex) {
+        Console.WriteLine(ex.Message);
+        Console.WriteLine(ex.StackTrace);
         // TODO Sam: handle exceptips in C#   
       } finally { // Close and clean up workbook objects. 
         if (workbook != null) {
