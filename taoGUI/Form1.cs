@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Windows.Forms.DataVisualization.Charting;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace taoGUI {
   public partial class Form1 : Form {
@@ -20,10 +22,10 @@ namespace taoGUI {
     private List<TabPage> appStatusTabPages = new List<TabPage>();                  // This is the tab pages, each represent one specific Tao App.
     private List<TabControl> statusReportsTabControl = new List<TabControl>();      // This is a sub "tab control" contained within each Tao App.
     private List<TabPage> statusReportsTabPages = new List<TabPage>();              // This is the sub tab pages per report per Tao Application.
+    private string jsonStr;
 
     private string showProjectApplicationInTreeView(string line) {
-      string applicationId = line.Substring(line.IndexOf(":") + 3);
-      applicationId = applicationId.Substring(0, applicationId.Length - 2);
+      string applicationId = getAppId(line);
       taoProjectView.Nodes.Add(applicationId, applicationId);
       taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|status", "Application Status");
       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|reports", "Tao Suite Reports");
@@ -36,9 +38,12 @@ namespace taoGUI {
     }
 
     private void showProjectDescriptionToolTip(string line) {
-      string appIdToolTipText = line.Substring(line.IndexOf(":") + 3);
-      appIdToolTipText = appIdToolTipText.Substring(0, appIdToolTipText.Length - 2);
-      taoProjectView.Nodes[countProjectsInTreeView].ToolTipText = appIdToolTipText;
+      taoProjectView.Nodes[countProjectsInTreeView].ToolTipText = getAppId(line);
+    }
+
+    private string getAppId(string line) {
+      string appId = line.Substring(line.IndexOf(":") + 3);
+      return appId.Substring(0, appId.Length - 2);
     }
 
     private void walkDirectoryStructure(System.IO.DirectoryInfo currentFolder, TreeNode currentNode, string keyName) {
@@ -61,11 +66,39 @@ namespace taoGUI {
       }
     }
 
+    public class TaoProjectCtx {
+      public string applicationId { get; set; }
+      public string description { get; set; }
+      public string folder { get; set; }
+    }
+
+    private List<TaoProjectCtx> getTaoProjectCtxList(string fileLocation) {
+      List<TaoProjectCtx> result = null;
+      StringBuilder sb = new StringBuilder();
+      if (File.Exists(fileLocation)) {
+        foreach (string line in File.ReadAllLines(fileLocation)) {
+          if (line.StartsWith("#")) {
+          } else {
+            string l = line.Replace(@"\", @"\\");
+            sb.Append(l);
+            sb.Append("\n");
+          }
+        }
+        string jsonStr = sb.ToString();
+        result = JsonConvert.DeserializeObject<List<TaoProjectCtx>>(jsonStr);
+      }
+      return result;
+    }
+
     public void showProjectsInTreeView() {
       countProjectsInTreeView = 0;
       taoProjectView.Nodes.Clear();
       string fileLocation = Application.StartupPath + @"\taoGUI.resources\projects.tao";
-      if (System.IO.File.Exists(fileLocation)) {
+      if (File.Exists(fileLocation)) {
+        // Read the json file into a list of TaoProjectCtx objects
+        // @Dave: Use the list (instead of parsing the json file yourself 
+        List<TaoProjectCtx> projectContextList = getTaoProjectCtxList(fileLocation); // <== !! USE IT !!
+
         string line;
         System.IO.StreamReader file = new System.IO.StreamReader(fileLocation);
         while ((line = file.ReadLine()) != null) {
@@ -138,7 +171,7 @@ namespace taoGUI {
             line = sr.ReadLine();
             if (line.Contains("\"folder\"")) {
               folderLocation = line.Substring(line.IndexOf(":") + 3);
-              folderLocation = folderLocation.Substring(0, folderLocation.Length-1);
+              folderLocation = folderLocation.Substring(0, folderLocation.Length - 1);
             }
           }
         }
