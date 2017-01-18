@@ -14,37 +14,32 @@ using System.IO;
 
 namespace taoGUI {
   public partial class Form1 : Form {
-
+    public static string TAO_PROJECT_FILE = Application.StartupPath + @"\taoGUI.resources\projects.tao";
     public static Excel.Application _taoApp = null;
 
-    private int countProjectsInTreeView;
+    // private int countProjectsInTreeView;
     private TabControl tabCtrlAppStatus;                                            // This is the main "tab control" container for status reports
     private List<TabPage> appStatusTabPages = new List<TabPage>();                  // This is the tab pages, each represent one specific Tao App.
     private List<TabControl> statusReportsTabControl = new List<TabControl>();      // This is a sub "tab control" contained within each Tao App.
     private List<TabPage> statusReportsTabPages = new List<TabPage>();              // This is the sub tab pages per report per Tao Application.
-    private string jsonStr;
 
-    private string showProjectApplicationInTreeView(string line) {
-      string applicationId = getAppId(line);
-      taoProjectView.Nodes.Add(applicationId, applicationId);
-      taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|status", "Application Status");
-      taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|reports", "Tao Suite Reports");
-      taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|summary", "Summary");
-      taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|velocity", "Velocity");
-      taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|stability", "Stability");
-      taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|tao", "Tao Sheets");
-      taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|file", "File Structure");
-      return applicationId;
-    }
+    /* private string showProjectApplicationInTreeView(string line) {
+       string applicationId = getAppId(line);
+       taoProjectView.Nodes.Add(applicationId, applicationId);
+       taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|status", "Application Status");
+       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|reports", "Tao Suite Reports");
+       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|summary", "Summary");
+       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|velocity", "Velocity");
+       taoProjectView.Nodes[countProjectsInTreeView].Nodes[0].Nodes.Add(applicationId + "|status|stability", "Stability");
+       taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|tao", "Tao Sheets");
+       taoProjectView.Nodes[countProjectsInTreeView].Nodes.Add(applicationId + "|file", "File Structure");
+       return applicationId;
+     } */
 
-    private void showProjectDescriptionToolTip(string line) {
-      taoProjectView.Nodes[countProjectsInTreeView].ToolTipText = getAppId(line);
-    }
-
-    private string getAppId(string line) {
+    /* private string getAppId(string line) {
       string appId = line.Substring(line.IndexOf(":") + 3);
       return appId.Substring(0, appId.Length - 2);
-    }
+    } */
 
     private void walkDirectoryStructure(System.IO.DirectoryInfo currentFolder, TreeNode currentNode, string keyName) {
       int nodeIndex = 0;
@@ -56,24 +51,27 @@ namespace taoGUI {
       }
     }
 
-    private void showFileStructureInTreeView(string line, string applicationId, string keyName) {
-      string rootDirectory = line.Substring(line.IndexOf(":") + 3);
-      rootDirectory = rootDirectory.Substring(0, rootDirectory.Length - 1);
-      string appFolderNmae = rootDirectory + "/" + applicationId;
-      if (System.IO.Directory.Exists(appFolderNmae)) {
-        System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(appFolderNmae);
-        walkDirectoryStructure(di, taoProjectView.Nodes[countProjectsInTreeView].Nodes[2], keyName);
-      }
-    }
+    /*    private void showFileStructureInTreeView(string line, string applicationId, string keyName) {
+          string rootDirectory = line.Substring(line.IndexOf(":") + 3);
+          rootDirectory = rootDirectory.Substring(0, rootDirectory.Length - 1);
+          string appFolderNmae = rootDirectory + "/" + applicationId;
+          if (System.IO.Directory.Exists(appFolderNmae)) {
+            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(appFolderNmae);
+            walkDirectoryStructure(di, taoProjectView.Nodes[countProjectsInTreeView].Nodes[2], keyName);
+          }
+        } */
 
     public class TaoProjectCtx {
       public string applicationId { get; set; }
       public string description { get; set; }
       public string folder { get; set; }
+      public string getAppFolder() {
+        return folder + "/" + applicationId;
+      }
     }
 
-    private List<TaoProjectCtx> getTaoProjectCtxList(string fileLocation) {
-      List<TaoProjectCtx> result = null;
+    private Dictionary<string, TaoProjectCtx> getTaoProjectCtxMap(string fileLocation) {
+      var projectContextList = new List<TaoProjectCtx>();
       StringBuilder sb = new StringBuilder();
       if (File.Exists(fileLocation)) {
         foreach (string line in File.ReadAllLines(fileLocation)) {
@@ -85,44 +83,66 @@ namespace taoGUI {
           }
         }
         string jsonStr = sb.ToString();
-        result = JsonConvert.DeserializeObject<List<TaoProjectCtx>>(jsonStr);
+        projectContextList = JsonConvert.DeserializeObject<List<TaoProjectCtx>>(jsonStr);
+      }
+      var result = new Dictionary<string, TaoProjectCtx>();
+      foreach (TaoProjectCtx ctx in projectContextList) {
+        result.Add(ctx.applicationId, ctx);
       }
       return result;
     }
 
     public void showProjectsInTreeView() {
-      countProjectsInTreeView = 0;
+      //      countProjectsInTreeView = 0;
       taoProjectView.Nodes.Clear();
-      string fileLocation = Application.StartupPath + @"\taoGUI.resources\projects.tao";
-      if (File.Exists(fileLocation)) {
+      if (File.Exists(TAO_PROJECT_FILE)) {
         // Read the json file into a list of TaoProjectCtx objects
         // @Dave: Use the list (instead of parsing the json file yourself 
-        List<TaoProjectCtx> projectContextList = getTaoProjectCtxList(fileLocation); // <== !! USE IT !!
+        Dictionary<string, TaoProjectCtx> projectContextMap = getTaoProjectCtxMap(TAO_PROJECT_FILE);
+        foreach (TaoProjectCtx ctx in projectContextMap.Values) {
+          string applicationId = ctx.applicationId;
+          TreeNode prjNode = taoProjectView.Nodes.Add(applicationId, applicationId);
+          prjNode.ToolTipText = applicationId;
+          TreeNode l1_node = prjNode.Nodes.Add(applicationId + "|status", "Application Status");
+          l1_node.Nodes.Add(applicationId + "|status|reports", "Tao Suite Reports");
+          l1_node.Nodes.Add(applicationId + "|status|summary", "Summary");
+          l1_node.Nodes.Add(applicationId + "|status|velocity", "Velocity");
+          l1_node.Nodes.Add(applicationId + "|status|stability", "Stability");
+          prjNode.Nodes.Add(applicationId + "|tao", "Tao Sheets");
+          TreeNode fileStrctNode = prjNode.Nodes.Add(applicationId + "|file", "File Structure");
 
-        string line;
-        System.IO.StreamReader file = new System.IO.StreamReader(fileLocation);
-        while ((line = file.ReadLine()) != null) {
-          if (line.Contains("\"applicationId\"")) {
-            string applicationId = showProjectApplicationInTreeView(line);
-            if ((line = file.ReadLine()) != null) {
-              if (line.Contains("\"description\"")) {
-                showProjectDescriptionToolTip(line);
-              }
-            }
-            if ((line = file.ReadLine()) != null) {
-              if (line.Contains("\"folder\"")) {
-                showFileStructureInTreeView(line, applicationId, applicationId + "|file");
-                countProjectsInTreeView++;
-              }
-            }
+          string appFolderName = ctx.getAppFolder();
+          if (System.IO.Directory.Exists(appFolderName)) {
+            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(appFolderName);
+            walkDirectoryStructure(di, fileStrctNode, applicationId + "|file");
           }
+
         }
-        file.Close();
+
+        //        string line;
+        //        System.IO.StreamReader file = new System.IO.StreamReader(fileLocation);
+        //        while ((line = file.ReadLine()) != null) {
+        //          if (line.Contains("\"applicationId\"")) {
+        //            string applicationId = showProjectApplicationInTreeView(line);
+        //            if ((line = file.ReadLine()) != null) {
+        //              if (line.Contains("\"description\"")) {
+        //                showProjectDescriptionToolTip(line);
+        //              }
+        //            }
+        //            if ((line = file.ReadLine()) != null) {
+        //              if (line.Contains("\"folder\"")) {
+        //                showFileStructureInTreeView(line, applicationId, applicationId + "|file");
+        //                countProjectsInTreeView++;
+        //              }
+        //            }
+        //          }
+        //        }
+        //        file.Close();
       }
     }
 
     public void addProjectFile(string appName, string appDesc, string appFolder) {
-      string fileLocation = Application.StartupPath + @"\taoGUI.resources\projects.tao";
+      string fileLocation = TAO_PROJECT_FILE;
       if (!System.IO.File.Exists(fileLocation)) {
         // Create a file to write to.
         using (System.IO.StreamWriter sw = System.IO.File.CreateText(fileLocation)) {
@@ -160,7 +180,7 @@ namespace taoGUI {
     }
 
     public string getProjectFolderName(string appId) {
-      string fileLocation = Application.StartupPath + @"\taoGUI.resources\projects.tao";
+      string fileLocation = TAO_PROJECT_FILE;
       string folderLocation = "";
       using (var sr = new System.IO.StreamReader(fileLocation)) {
         string line;
@@ -180,7 +200,7 @@ namespace taoGUI {
     }
 
     public void closeProjectFile(string appName) {
-      string fileLocation = Application.StartupPath + @"\taoGUI.resources\projects.tao";
+      string fileLocation = TAO_PROJECT_FILE;
       string tempFile = System.IO.Path.GetTempFileName();
       using (var sr = new System.IO.StreamReader(fileLocation))
       using (var sw = new System.IO.StreamWriter(tempFile)) {
