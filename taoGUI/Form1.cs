@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using System.IO;
 using taoGUI.Json;
 using static taoGUI.Json.TaoJsonConfigReader;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace taoGUI {
   public partial class Form1 : Form {
@@ -516,7 +517,49 @@ namespace taoGUI {
       }
     }
 
-    private void button_OpenTaoSheet(object sender, EventArgs e) {
+    private void button_OpenTaoSheet(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData) {
+
+      Excel.Application xlApp = null;
+      Excel.Workbook xlWorkbook = null;
+
+      xlApp = new Excel.Application();
+      xlApp.ScreenUpdating = true;
+      xlApp.Visible = true;
+
+      string taoInputFolders = projectRootFolder + @"\taoSuite_Input\";
+      List<string> taoSheets = new List<string>();
+      string taoSheet = string.Empty;
+
+      DataGridViewSelectedRowCollection rows = taoSheetData.SelectedRows;
+      taoSheets.Clear();
+
+      if (rows.Count > 0) {
+        foreach (DataGridViewRow row in rows) {
+          DataRow myRow = (row.DataBoundItem as DataRowView).Row;
+          taoSheet = taoInputFolders + myRow.ItemArray[0].ToString();
+          if (!taoSheets.Contains(taoSheet)) {
+            taoSheets.Add(taoSheet);
+          }
+        }
+      } else {
+        Int32 selectedCellCount = taoSheetData.GetCellCount(DataGridViewElementStates.Selected);
+        if (selectedCellCount > 0) {
+          for (int i = 0; i < selectedCellCount; i++) {
+            int rowIndex = taoSheetData.SelectedCells[i].RowIndex;
+            taoSheet = taoInputFolders + taoSheetData.Rows[rowIndex].Cells[0].Value.ToString();
+            if (!taoSheets.Contains(taoSheet)) {
+              taoSheets.Add(taoSheet);
+            }
+          }
+        } else {
+          MessageBox.Show("Unable to chart the pass rate history as no Tao Suite was selected.", "Pass Rate History", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+        }
+      }
+      foreach (string ts in taoSheets) {
+        if (System.IO.File.Exists(ts)) {
+          xlWorkbook = xlApp.Workbooks.Open(ts, true, false); // Update links (e.g. parameter files) and allow user to read and write as necessary
+        }
+      }
     }
 
     private void addTabContentTaoSuiteReports(string appId, TabPage tabPageContent) {
@@ -695,7 +738,7 @@ namespace taoGUI {
       buttonOpenTaoSheet.Left = 524;
       buttonOpenTaoSheet.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonOpenTaoSheet.UseVisualStyleBackColor = true;
-      buttonOpenTaoSheet.Click += new EventHandler((sender, e) => button_OpenTaoSheet(sender, e));
+      buttonOpenTaoSheet.Click += new EventHandler((sender, e) => button_OpenTaoSheet(sender, e, projectRootFolder, taoSheets));
       tabPageContent.Controls.Add(buttonOpenTaoSheet);
 
       System.Windows.Forms.Button buttonOpenTaoSuiteReport = new System.Windows.Forms.Button();
