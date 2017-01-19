@@ -73,7 +73,6 @@ namespace taoGUI {
             if (oConn != null) {
               oConn.Close();
             }
-            GC.Collect();
           }
           if (exception != null) {
             throw exception;

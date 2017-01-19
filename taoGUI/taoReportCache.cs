@@ -110,6 +110,10 @@ namespace taoGUI {
       tmpTable.Columns.Add("lowerBollingerBand", typeof(double));
       tmpTable.Columns.Add("upperBollingerBand", typeof(double));
       tmpTable.Columns.Add("impliedVolatility", typeof(double));
+      // TODO: Dave add mean success rate = number of iterations where pass rate = 100% / total iterations
+      // TODO: Dave add mean success duration = average length of continuous success (100%)
+      // TODO: Dave add mean time to failure = when success, compare the "length of success" to the mean success duration,
+      //       combined with the mean succes rate to report probability of failure at next N number of iterations.
       return tmpTable;
     }
 
