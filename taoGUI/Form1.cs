@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using System.IO;
 using taoGUI.Json;
 using static taoGUI.Json.TaoJsonConfigReader;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace taoGUI {
   public partial class Form1 : Form {
@@ -516,7 +517,49 @@ namespace taoGUI {
       }
     }
 
-    private void button_ExportTaoSuiteResults(object sender, EventArgs e) {
+    private void button_OpenTaoSheet(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData) {
+
+      Excel.Application xlApp = null;
+      Excel.Workbook xlWorkbook = null;
+
+      xlApp = new Excel.Application();
+      xlApp.ScreenUpdating = true;
+      xlApp.Visible = true;
+
+      string taoInputFolders = projectRootFolder + @"\taoSuite_Input\";
+      List<string> taoSheets = new List<string>();
+      string taoSheet = string.Empty;
+
+      DataGridViewSelectedRowCollection rows = taoSheetData.SelectedRows;
+      taoSheets.Clear();
+
+      if (rows.Count > 0) {
+        foreach (DataGridViewRow row in rows) {
+          DataRow myRow = (row.DataBoundItem as DataRowView).Row;
+          taoSheet = taoInputFolders + myRow.ItemArray[0].ToString();
+          if (!taoSheets.Contains(taoSheet)) {
+            taoSheets.Add(taoSheet);
+          }
+        }
+      } else {
+        Int32 selectedCellCount = taoSheetData.GetCellCount(DataGridViewElementStates.Selected);
+        if (selectedCellCount > 0) {
+          for (int i = 0; i < selectedCellCount; i++) {
+            int rowIndex = taoSheetData.SelectedCells[i].RowIndex;
+            taoSheet = taoInputFolders + taoSheetData.Rows[rowIndex].Cells[0].Value.ToString();
+            if (!taoSheets.Contains(taoSheet)) {
+              taoSheets.Add(taoSheet);
+            }
+          }
+        } else {
+          MessageBox.Show("Unable to chart the pass rate history as no Tao Suite was selected.", "Pass Rate History", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+        }
+      }
+      foreach (string ts in taoSheets) {
+        if (System.IO.File.Exists(ts)) {
+          xlWorkbook = xlApp.Workbooks.Open(ts, true, false); // Update links (e.g. parameter files) and allow user to read and write as necessary
+        }
+      }
     }
 
     private void addTabContentTaoSuiteReports(string appId, TabPage tabPageContent) {
@@ -685,18 +728,44 @@ namespace taoGUI {
       buttonTaoSuiteReportHist.Click += new EventHandler((sender, e) => button_ShowTaoSuiteHistogram(sender, e, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
       tabPageContent.Controls.Add(buttonTaoSuiteReportHist);
 
-      System.Windows.Forms.Button buttonTaoSuiteReportExport = new System.Windows.Forms.Button();
-      buttonTaoSuiteReportExport.Image = global::taoGUI.Properties.Resources.Table;
-      buttonTaoSuiteReportExport.Location = new System.Drawing.Point(522, -1);
-      buttonTaoSuiteReportExport.Name = "buttonTaoSuiteReportExport";
-      buttonTaoSuiteReportExport.Size = new System.Drawing.Size(24, 23);
-      buttonTaoSuiteReportExport.TabIndex = 0;
-      buttonTaoSuiteReportExport.Top = -1;
-      buttonTaoSuiteReportExport.Left = 522;
-      buttonTaoSuiteReportExport.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
-      buttonTaoSuiteReportExport.UseVisualStyleBackColor = true;
-      buttonTaoSuiteReportExport.Click += new EventHandler((sender, e) => button_ExportTaoSuiteResults(sender, e));
-      tabPageContent.Controls.Add(buttonTaoSuiteReportExport);
+      System.Windows.Forms.Button buttonOpenTaoSheet = new System.Windows.Forms.Button();
+      buttonOpenTaoSheet.Image = global::taoGUI.Properties.Resources.Table;
+      buttonOpenTaoSheet.Location = new System.Drawing.Point(524, -1);
+      buttonOpenTaoSheet.Name = "buttonOpenTaoSheet";
+      buttonOpenTaoSheet.Size = new System.Drawing.Size(24, 23);
+      buttonOpenTaoSheet.TabIndex = 0;
+      buttonOpenTaoSheet.Top = -1;
+      buttonOpenTaoSheet.Left = 524;
+      buttonOpenTaoSheet.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonOpenTaoSheet.UseVisualStyleBackColor = true;
+      buttonOpenTaoSheet.Click += new EventHandler((sender, e) => button_OpenTaoSheet(sender, e, projectRootFolder, taoSheets));
+      tabPageContent.Controls.Add(buttonOpenTaoSheet);
+
+      System.Windows.Forms.Button buttonOpenTaoSuiteReport = new System.Windows.Forms.Button();
+      buttonOpenTaoSuiteReport.Image = global::taoGUI.Properties.Resources.Document2;
+      buttonOpenTaoSuiteReport.Location = new System.Drawing.Point(551, -1);
+      buttonOpenTaoSuiteReport.Name = "buttonOpenTaoSuiteReport";
+      buttonOpenTaoSuiteReport.Size = new System.Drawing.Size(24, 23);
+      buttonOpenTaoSuiteReport.TabIndex = 0;
+      buttonOpenTaoSuiteReport.Top = -1;
+      buttonOpenTaoSuiteReport.Left = 551;
+      buttonOpenTaoSuiteReport.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonOpenTaoSuiteReport.UseVisualStyleBackColor = true;
+      // buttonOpenTaoSuiteReport.Click += new EventHandler((sender, e) => button_OpenTaoSuiteReport(sender, e));
+      tabPageContent.Controls.Add(buttonOpenTaoSuiteReport);
+
+      System.Windows.Forms.Button buttonExportTaoSuiteSummary = new System.Windows.Forms.Button();
+      buttonExportTaoSuiteSummary.Image = global::taoGUI.Properties.Resources.Go_Out;
+      buttonExportTaoSuiteSummary.Location = new System.Drawing.Point(578, -1);
+      buttonExportTaoSuiteSummary.Name = "buttonExportTaoSuiteSummary";
+      buttonExportTaoSuiteSummary.Size = new System.Drawing.Size(24, 23);
+      buttonExportTaoSuiteSummary.TabIndex = 0;
+      buttonExportTaoSuiteSummary.Top = -1;
+      buttonExportTaoSuiteSummary.Left = 578;
+      buttonExportTaoSuiteSummary.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonExportTaoSuiteSummary.UseVisualStyleBackColor = true;
+      // buttonExportTaoSuiteSummary.Click += new EventHandler((sender, e) => button_ExportTaoSuiteSummary(sender, e));
+      tabPageContent.Controls.Add(buttonExportTaoSuiteSummary);
 
       // Finally set up button tool-tips...
       ToolTip toolTip1 = new ToolTip();
@@ -713,7 +782,9 @@ namespace taoGUI {
       toolTip1.SetToolTip(buttonTaoSuiteReportAct, "Display the history of pass rates (as stacked area chart)");
       toolTip1.SetToolTip(buttonTaoSuiteReportPoll, "Display pass rates, with mean, standard deviation and volatiltiy bands");
       toolTip1.SetToolTip(buttonTaoSuiteReportHist, "Display pass rates histogram (about the pass rate mean) with standard deviation");
-      toolTip1.SetToolTip(buttonTaoSuiteReportExport, "Export the Tao Suite Reports view to Microsoft Excel");
+      toolTip1.SetToolTip(buttonOpenTaoSheet, "Open Tao Suite");
+      toolTip1.SetToolTip(buttonOpenTaoSuiteReport, "Open last known Tao Suite Report (latest test results)");
+      toolTip1.SetToolTip(buttonExportTaoSuiteSummary, "Export the Tao Suite Reports view to Microsoft Excel");
     }
 
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {

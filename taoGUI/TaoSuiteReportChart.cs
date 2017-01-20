@@ -49,8 +49,8 @@ namespace taoGUI {
       };
       var seriesLowerBollingerBand = new System.Windows.Forms.DataVisualization.Charting.Series {
         Name = "lowerBollingerBand",
-        Color = Color.FromArgb(132, System.Drawing.Color.LightSalmon),
-        BorderColor = System.Drawing.Color.LightSalmon,
+        Color = Color.FromArgb(132, System.Drawing.Color.LightPink),
+        BorderColor = System.Drawing.Color.LightPink,
         BorderWidth = 1,
         IsVisibleInLegend = false,
         IsXValueIndexed = true,
@@ -310,6 +310,10 @@ namespace taoGUI {
       }
       passRateChart.ChartAreas[0].AxisY.Maximum = chartMaximum;
       passRateChart.ChartAreas[0].AxisY.Minimum = chartMinimum;
+      passRateChart.ChartAreas[0].AxisX.MajorGrid.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.Dash;
+      passRateChart.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.FromArgb(80, System.Drawing.Color.LightGray);
+      passRateChart.ChartAreas[0].AxisY.MajorGrid.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.DashDotDot;
+      passRateChart.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.FromArgb(80, System.Drawing.Color.Gray);
       passRateChart.Invalidate();
     }
 
@@ -320,6 +324,8 @@ namespace taoGUI {
       int _opacityFail = 255;
       if (targetChartType == SeriesChartType.StackedColumn100) {
         this.Text = "Pass Rate History (percentage) - " + taoSuite + " @" + dbInstance;
+        _opacityPass = 80;
+        _opacityFail = 80;
       } else if (targetChartType == SeriesChartType.StackedArea) {
         this.Text = "Pass Rate History (actual) - " + taoSuite + " @" + dbInstance;
         _opacityPass = 132;
@@ -328,9 +334,9 @@ namespace taoGUI {
       passRateChart.Series.Clear();
       var seriesPass = new System.Windows.Forms.DataVisualization.Charting.Series {
         Name = "Pass",
-        Color = Color.FromArgb(_opacityPass, System.Drawing.Color.LightSteelBlue ),
+        Color = Color.FromArgb(_opacityPass, System.Drawing.Color.LightSteelBlue),
         BorderColor = System.Drawing.Color.DarkSlateBlue,
-        BorderWidth = 2,
+        BorderWidth = 1,
         IsVisibleInLegend = false,
         IsXValueIndexed = true,
         XValueType = ChartValueType.DateTime,
@@ -340,7 +346,7 @@ namespace taoGUI {
         Name = "Fail",
         Color = Color.FromArgb(_opacityFail, System.Drawing.Color.LemonChiffon ),
         BorderColor = System.Drawing.Color.DarkOrange,
-        BorderWidth = 2,
+        BorderWidth = 1,
         IsVisibleInLegend = false,
         IsXValueIndexed = true,
         XValueType = ChartValueType.DateTime,
@@ -396,6 +402,10 @@ namespace taoGUI {
           }
         }
       }
+      passRateChart.ChartAreas[0].AxisX.MajorGrid.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.Dash;
+      passRateChart.ChartAreas[0].AxisX.MajorGrid.LineColor = Color.FromArgb(80, System.Drawing.Color.LightGray);
+      passRateChart.ChartAreas[0].AxisY.MajorGrid.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.DashDotDot;
+      passRateChart.ChartAreas[0].AxisY.MajorGrid.LineColor = Color.FromArgb(80, System.Drawing.Color.Gray);
       passRateChart.Invalidate();
     }
 
