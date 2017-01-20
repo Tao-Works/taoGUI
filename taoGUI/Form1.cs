@@ -517,6 +517,91 @@ namespace taoGUI {
       }
     }
 
+    private void button_ExportTaoSuiteSummary(object sender, EventArgs e, DataGridView taoSheets) {
+
+      Excel.Application xlApp = null;
+      xlApp = new Excel.Application();
+      xlApp.ScreenUpdating = true;
+      xlApp.Visible = true;
+
+      Excel.Workbook xlWorkbook = xlApp.Workbooks.Add();
+      xlWorkbook.Sheets[1].Name = "Tao Suite Reports";
+
+      // Setup report headers...
+      xlWorkbook.Sheets[1].Range("B2").Value = "Tao Suite";
+      xlWorkbook.Sheets[1].Range("C2").Value = "First Run";
+      xlWorkbook.Sheets[1].Range("D2").Value = "Last Run";
+      xlWorkbook.Sheets[1].Range("E2").Value = "Iterations";
+      xlWorkbook.Sheets[1].Range("F2").Value = "Pass Rate";
+      xlWorkbook.Sheets[1].Range("G2").Value = "Delta";
+      xlWorkbook.Sheets[1].Range("H2").Value = "Mean";
+      xlWorkbook.Sheets[1].Range("I2").Value = "Std. Dev.";
+      xlWorkbook.Sheets[1].Range("J2").Value = "Lower Band";
+      xlWorkbook.Sheets[1].Range("K2").Value = "Upper Band";
+      xlWorkbook.Sheets[1].Range("L2").Value = "Volatility";
+
+      /*
+      foreach (DataGridViewRow row in taoSheets.Rows) {
+
+      }
+      */
+
+    }
+
+    private void button_OpenTaoSuiteReport(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData, string dbInstance) {
+
+      Excel.Application xlApp = null;
+      Excel.Workbook xlWorkbook = null;
+
+      xlApp = new Excel.Application();
+      xlApp.ScreenUpdating = true;
+      xlApp.Visible = true;
+
+      string taoReportFolders = projectRootFolder + @"\taoSuite_Report\"; // TODO: I am missing an object that takes care of these values...
+      List<string> taoSheets = new List<string>();
+      string taoSheet = string.Empty;
+      string timeOfLastRun = string.Empty;
+
+      DataGridViewSelectedRowCollection rows = taoSheetData.SelectedRows;
+      taoSheets.Clear();
+
+      if (rows.Count > 0) {
+        foreach (DataGridViewRow row in rows) {
+          DataRow myRow = (row.DataBoundItem as DataRowView).Row;
+          // TODO: Extend the data grid view to include "hidden" attributes: Tao Suite filename and latest Tao Suite Report filename.
+          //       This would prevent us having to re-construct (possibly with false extension) the filenames...
+          timeOfLastRun = myRow.ItemArray[2].ToString();
+          timeOfLastRun = timeOfLastRun.Replace(" ", "_").Replace(":", "");
+          taoSheet = myRow.ItemArray[0].ToString();
+          taoSheet = taoReportFolders + taoSheet.Substring(0, taoSheet.IndexOf(".")) + "." + timeOfLastRun + "." + dbInstance + ".xls"; // TODO: Refactor this assumption...
+          if (!taoSheets.Contains(taoSheet)) {
+            taoSheets.Add(taoSheet);
+          }
+        }
+      } else {
+        Int32 selectedCellCount = taoSheetData.GetCellCount(DataGridViewElementStates.Selected);
+        if (selectedCellCount > 0) {
+          for (int i = 0; i < selectedCellCount; i++) {
+            int rowIndex = taoSheetData.SelectedCells[i].RowIndex;
+            timeOfLastRun = taoSheetData.Rows[rowIndex].Cells[2].Value.ToString();
+            timeOfLastRun = timeOfLastRun.Replace(" ", "_").Replace(":", "");
+            taoSheet = taoSheetData.Rows[rowIndex].Cells[0].Value.ToString();
+            taoSheet = taoReportFolders + taoSheet.Substring(0, taoSheet.IndexOf(".")) + "." + timeOfLastRun + "." + dbInstance + ".xls"; // TODO: Refactor this assumption...
+            if (!taoSheets.Contains(taoSheet)) {
+              taoSheets.Add(taoSheet);
+            }
+          }
+        } else {
+          MessageBox.Show("No Tao Suite Report was selected for opening.", "Pass Rate History", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+        }
+      }
+      foreach (string ts in taoSheets) {
+        if (System.IO.File.Exists(ts)) {
+          xlWorkbook = xlApp.Workbooks.Open(ts, true, false); // Update links (e.g. parameter files) and allow user to read and write as necessary
+        }
+      }
+    }
+
     private void button_OpenTaoSheet(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData) {
 
       Excel.Application xlApp = null;
@@ -526,7 +611,7 @@ namespace taoGUI {
       xlApp.ScreenUpdating = true;
       xlApp.Visible = true;
 
-      string taoInputFolders = projectRootFolder + @"\taoSuite_Input\";
+      string taoInputFolders = projectRootFolder + @"\taoSuite_Input\"; // TODO: I am missing an object that takes care of these values...
       List<string> taoSheets = new List<string>();
       string taoSheet = string.Empty;
 
@@ -552,7 +637,7 @@ namespace taoGUI {
             }
           }
         } else {
-          MessageBox.Show("Unable to chart the pass rate history as no Tao Suite was selected.", "Pass Rate History", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+          MessageBox.Show("No Tao Suite was selected for opening.", "Pass Rate History", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
         }
       }
       foreach (string ts in taoSheets) {
@@ -742,7 +827,7 @@ namespace taoGUI {
       tabPageContent.Controls.Add(buttonOpenTaoSheet);
 
       System.Windows.Forms.Button buttonOpenTaoSuiteReport = new System.Windows.Forms.Button();
-      buttonOpenTaoSuiteReport.Image = global::taoGUI.Properties.Resources.Document2;
+      buttonOpenTaoSuiteReport.Image = global::taoGUI.Properties.Resources.Ok;
       buttonOpenTaoSuiteReport.Location = new System.Drawing.Point(551, -1);
       buttonOpenTaoSuiteReport.Name = "buttonOpenTaoSuiteReport";
       buttonOpenTaoSuiteReport.Size = new System.Drawing.Size(24, 23);
@@ -751,7 +836,7 @@ namespace taoGUI {
       buttonOpenTaoSuiteReport.Left = 551;
       buttonOpenTaoSuiteReport.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonOpenTaoSuiteReport.UseVisualStyleBackColor = true;
-      // buttonOpenTaoSuiteReport.Click += new EventHandler((sender, e) => button_OpenTaoSuiteReport(sender, e));
+      buttonOpenTaoSuiteReport.Click += new EventHandler((sender, e) => button_OpenTaoSuiteReport(sender, e, projectRootFolder, taoSheets, comboDbConnection.Items[comboDbConnection.SelectedIndex].ToString()));
       tabPageContent.Controls.Add(buttonOpenTaoSuiteReport);
 
       System.Windows.Forms.Button buttonExportTaoSuiteSummary = new System.Windows.Forms.Button();
@@ -764,7 +849,7 @@ namespace taoGUI {
       buttonExportTaoSuiteSummary.Left = 578;
       buttonExportTaoSuiteSummary.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonExportTaoSuiteSummary.UseVisualStyleBackColor = true;
-      // buttonExportTaoSuiteSummary.Click += new EventHandler((sender, e) => button_ExportTaoSuiteSummary(sender, e));
+      buttonExportTaoSuiteSummary.Click += new EventHandler((sender, e) => button_ExportTaoSuiteSummary(sender, e, taoSheets));
       tabPageContent.Controls.Add(buttonExportTaoSuiteSummary);
 
       // Finally set up button tool-tips...
