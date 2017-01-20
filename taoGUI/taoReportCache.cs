@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.FileIO;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -115,9 +117,9 @@ namespace taoGUI {
 
     private void getCacheResults() {
       cacheResults = initialiseCacheTable();
-      if (System.IO.File.Exists(taoFolders.cacheLocation)) {
-        using (Microsoft.VisualBasic.FileIO.TextFieldParser parser = new Microsoft.VisualBasic.FileIO.TextFieldParser(taoFolders.cacheLocation)) {
-          parser.TextFieldType = Microsoft.VisualBasic.FileIO.FieldType.Delimited;
+      if (File.Exists(taoFolders.cacheLocation)) {
+        using (TextFieldParser parser = new TextFieldParser(taoFolders.cacheLocation)) {
+          parser.TextFieldType = FieldType.Delimited;
           parser.SetDelimiters(";");
           string[] fields = parser.ReadFields();    // Skip header...
           while (!parser.EndOfData) {
@@ -145,7 +147,7 @@ namespace taoGUI {
       tmpStatistics.initialise(suiteName);
 
       string filePattern = suiteName.Substring(0, suiteName.IndexOf(".")) + "*" + taoFolders.dbInstance + ".xls";
-      string[] taoResults = System.IO.Directory.GetFiles(taoFolders.taoSuiteOutputFolder, filePattern);
+      string[] taoResults = Directory.GetFiles(taoFolders.taoSuiteOutputFolder, filePattern);
 
       string tmptaoSuiteReport = "";
       string tmpTaoSuiteFirstRun = "9999-99-99_2359";
@@ -195,8 +197,8 @@ namespace taoGUI {
       actualResults.Columns.Add("passRateLocation", typeof(string));
       actualResults.Columns.Add("passRateDeltaLocation", typeof(string));
       actualResults.Columns.Add("allTaoSuiteReports", typeof(List<string>));
-      if (System.IO.Directory.Exists(taoFolders.taoSuiteInputFolder)) {
-        string[] fileEntries = System.IO.Directory.GetFiles(taoFolders.taoSuiteInputFolder);
+      if (Directory.Exists(taoFolders.taoSuiteInputFolder)) {
+        string[] fileEntries = Directory.GetFiles(taoFolders.taoSuiteInputFolder);
         TaoStatistic taoStatistics = new TaoStatistic();
         foreach (string fileName in fileEntries) {
           getTaoResults(taoFolders, fileName.Substring(fileName.LastIndexOf("\\") + 1), out taoStatistics);
@@ -268,7 +270,7 @@ namespace taoGUI {
     }
 
     private void persistCacheDataTable() {
-      using (var sw = new System.IO.StreamWriter(taoFolders.cacheLocation)) {
+      using (var sw = new StreamWriter(taoFolders.cacheLocation)) {
         string line;
         sw.WriteLine("taoSuiteName;taoSuiteFirstRun;taoSuiteLastRun;taoSuiteIterations;passRate;passRateDelta;passRateMean;passRateStdDev;lowerBollingerBand;upperBollingerBand;impliedVolatility");
         int totalRows = cacheResults.Rows.Count;
@@ -294,7 +296,7 @@ namespace taoGUI {
 
     private void persistSampleData(string taoSuiteName, List<TaoSamplePoint> allSamplePoints) {
       string chartLocation = taoFolders.chartDataFolderPrefix + taoSuiteName.Substring(0, taoSuiteName.IndexOf(".")) + ".tao";
-      using (var sw = new System.IO.StreamWriter(chartLocation)) {
+      using (var sw = new StreamWriter(chartLocation)) {
         string line;
         sw.WriteLine("sampleYear;sampleMonth;sampleDay;sampleHour;sampleMinute;totalTests;totalPass;overallPassRate");
         foreach (TaoSamplePoint tmpSamplePoint in allSamplePoints) {
@@ -337,7 +339,7 @@ namespace taoGUI {
         calcProgress.setProgressAction(3, "");
         calcProgress.Refresh();
         string targetFilename = r["passRateLocation"].ToString();
-        if (targetFilename.Length > 0 && System.IO.File.Exists(targetFilename)) {
+        if (targetFilename.Length > 0 && File.Exists(targetFilename)) {
           TaoReportReader lastKnownTao = new TaoReportReader(targetFilename);
           taoPassRate = lastKnownTao.getOverallPassRate();
         }
@@ -349,7 +351,7 @@ namespace taoGUI {
         calcProgress.setProgressAction(2, "2) Calculating pass rate delta ...");
         calcProgress.Refresh();
         targetFilename = r["passRateDeltaLocation"].ToString();
-        if (targetFilename.Length > 0 && System.IO.File.Exists(targetFilename)) {
+        if (targetFilename.Length > 0 && File.Exists(targetFilename)) {
           TaoReportReader previousKnownTao = new TaoReportReader(targetFilename);
           previousTaoPassRate = previousKnownTao.getOverallPassRate();
         }
