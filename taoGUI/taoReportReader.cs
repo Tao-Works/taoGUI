@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using taoGUI.TaoReader;
+using taoGUI.TaoBeanReader;
 
 namespace taoGUI {
   class TaoReportReader {
@@ -94,7 +94,7 @@ namespace taoGUI {
       return _sumTotalTests;
     }
 
-    public int getPairsThatAreEqual() {
+    public int getTotalPass() {
       return _sumPairsThatAreEqual;
     }
 

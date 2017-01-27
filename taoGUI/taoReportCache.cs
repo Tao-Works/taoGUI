@@ -51,7 +51,7 @@ namespace taoGUI {
         TaoReportReader taoSuiteResults = new TaoReportReader(sampleResultFile);
 
         totalTests = taoSuiteResults.getTotalTests();
-        totalPass = taoSuiteResults.getPairsThatAreEqual();
+        totalPass = taoSuiteResults.getTotalPass();
         overallPassRate = taoSuiteResults.getOverallPassRate();
 
       }
