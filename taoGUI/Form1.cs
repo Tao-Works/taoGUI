@@ -527,7 +527,12 @@ namespace taoGUI {
       Excel.Workbook xlWorkbook = xlApp.Workbooks.Add();
       xlWorkbook.Sheets[1].Name = "Tao Suite Reports";
 
-      // Setup report headers...
+      // Setup column widths
+      xlWorkbook.Sheets[1].Columns["A:A"].ColumnWidth = 2.14;     // approx  20 pixcels
+      xlWorkbook.Sheets[1].Columns["B:B"].ColumnWidth = 67.14;    // approx 480 pixcels
+      xlWorkbook.Sheets[1].Columns["C:L"].ColumnWidth = 17.14;    // approx 125 pixcels
+
+      // Setup report headers
       xlWorkbook.Sheets[1].Range("B2").Value = "Tao Suite";
       xlWorkbook.Sheets[1].Range("C2").Value = "First Run";
       xlWorkbook.Sheets[1].Range("D2").Value = "Last Run";
@@ -539,12 +544,58 @@ namespace taoGUI {
       xlWorkbook.Sheets[1].Range("J2").Value = "Lower Band";
       xlWorkbook.Sheets[1].Range("K2").Value = "Upper Band";
       xlWorkbook.Sheets[1].Range("L2").Value = "Volatility";
+      
+      // Format the header
+      xlWorkbook.Sheets[1].Range("B2:L2").Interior.Color = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.FromArgb(204, 204, 255));  // dull blue
+      xlWorkbook.Sheets[1].Range("B2:L2").Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+      xlWorkbook.Sheets[1].Range("B2:L2").Borders.Color = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.FromArgb(64, 64, 64));      // dark grey
+      xlWorkbook.Sheets[1].Range("B2:L2").Borders.Weight = Excel.XlBorderWeight.xlThin;
+      xlWorkbook.Sheets[1].Range("B2:L2").Font.Bold = true;
+      xlWorkbook.Sheets[1].Range("B2:L2").IndentLevel = 1;
 
-      /*
+      // Export the data
+      int excelRowIndex = 3;
       foreach (DataGridViewRow row in taoSheets.Rows) {
-
+        xlWorkbook.Sheets[1].Range("B"+ excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[0]).Value;
+        xlWorkbook.Sheets[1].Range("C" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[1]).Value;
+        xlWorkbook.Sheets[1].Range("D" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[2]).Value;
+        xlWorkbook.Sheets[1].Range("E" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[3]).Value;
+        xlWorkbook.Sheets[1].Range("F" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[4]).Value;
+        if (0.0 < Convert.ToDouble(((DataGridViewCell)row.Cells[4]).Value.ToString()) && Convert.ToDouble(((DataGridViewCell)row.Cells[4]).Value.ToString()) < 100.0) {
+          xlWorkbook.Sheets[1].Range("F" + excelRowIndex.ToString()).Interior.Color = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.LemonChiffon);
+        }
+        xlWorkbook.Sheets[1].Range("G" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[5]).Value;
+        if (Convert.ToDouble(((DataGridViewCell)row.Cells[5]).Value.ToString()) < 0.0) {
+          xlWorkbook.Sheets[1].Range("G" + excelRowIndex.ToString()).Interior.Color = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.LightPink);
+        }
+        if (Convert.ToDouble(((DataGridViewCell)row.Cells[5]).Value.ToString()) > 0.0) {
+          xlWorkbook.Sheets[1].Range("G" + excelRowIndex.ToString()).Interior.Color = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.LightGreen);
+        }
+        xlWorkbook.Sheets[1].Range("H" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[6]).Value;
+        xlWorkbook.Sheets[1].Range("I" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[7]).Value;
+        xlWorkbook.Sheets[1].Range("J" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[8]).Value;
+        xlWorkbook.Sheets[1].Range("K" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[9]).Value;
+        xlWorkbook.Sheets[1].Range("L" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[10]).Value;
+        excelRowIndex++;
       }
-      */
+      if (excelRowIndex > 3) {
+        excelRowIndex--;
+      }
+
+      // Format exported cells
+      xlWorkbook.Sheets[1].Range("B3:L" + excelRowIndex.ToString()).Borders.Color = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.LightGray);
+      xlWorkbook.Sheets[1].Range("C3:D" + excelRowIndex.ToString()).Cells.HorizontalAlignment = Microsoft.Office.Interop.Excel.XlHAlign.xlHAlignCenter;
+      xlWorkbook.Sheets[1].Range("E3:E" + excelRowIndex.ToString()).NumberFormat = @"_(* #,##0_);_(* -#,##0_);_(* "" - ""??_);_(@_)";
+      xlWorkbook.Sheets[1].Range("F3:L" + excelRowIndex.ToString()).NumberFormat = @"_(* #,##0.0000_);_(* -#,##0.0000_);_(* "" - ""??_);_(@_)";
+
+      // Freeze panes
+      xlApp.ActiveWindow.SplitRow = 2;
+      xlApp.ActiveWindow.FreezePanes = true;
+      Excel.Range firstRow = (Excel.Range)xlWorkbook.Sheets[1].Rows[2];
+      firstRow.AutoFilter(1, Type.Missing, Excel.XlAutoFilterOperator.xlAnd, Type.Missing, true);
+
+      // Now zoom out
+      xlApp.ActiveWindow.Zoom = 80;
 
     }
 
@@ -872,12 +923,124 @@ namespace taoGUI {
       toolTip1.SetToolTip(buttonExportTaoSuiteSummary, "Export the Tao Suite Reports view to Microsoft Excel");
     }
 
+    private void button_SetSummaryDimensions(object sender, EventArgs e) {
+      formGroupByDimensions newProj = new formGroupByDimensions(this); // Passing master form to trigger master-form refresh after sub-form commit
+      newProj.ShowDialog();
+    }
+
+    private void addTabContentSummary(string appId, TabPage tabPageContent) {
+
+      string projectRootFolder = getProjectFolderName(appId) + @"\" + appId;
+
+      // Create a "ribbon" effect for various control items (like filters and search)
+      tabPageContent.Padding = new Padding(0, 24, 0, 0);
+
+      // Create a database selector so that users can switch between instances and compare results
+      System.Windows.Forms.ComboBox comboDbConnSummary = new System.Windows.Forms.ComboBox();
+      comboDbConnSummary.FormattingEnabled = true;
+      comboDbConnSummary.Location = new System.Drawing.Point(4, 28);
+      comboDbConnSummary.Name = "comboDbConnSummary." + appId;
+      comboDbConnSummary.Size = new System.Drawing.Size(200, 21);
+      comboDbConnSummary.TabIndex = 0;
+      comboDbConnSummary.Top = 0;
+      comboDbConnSummary.Left = 0;
+      comboDbConnSummary.Items.Add("All Database Connections");
+      comboDbConnSummary.SelectedIndex = 0;
+      // Read the connection files in the project config area
+      string dirLocOfDbConnection = projectRootFolder + @"\conf";
+      if (System.IO.Directory.Exists(dirLocOfDbConnection)) {
+        string[] dbConnections = System.IO.Directory.GetFiles(dirLocOfDbConnection);
+        foreach (string fileName in dbConnections) {
+          string ConnectionName = fileName.Substring(fileName.LastIndexOf("\\") + 1);
+          if (ConnectionName.Contains("Connection.")) {
+            string dbConnection = ConnectionName.Substring(11);
+            comboDbConnSummary.Items.Add(dbConnection.Substring(0, dbConnection.IndexOf(".")));
+            comboDbConnSummary.SelectedIndex++;
+          }
+        }
+      }
+      string dbInstance = comboDbConnSummary.Items[comboDbConnSummary.SelectedIndex].ToString();
+
+      // Create some filters so that user can focus on specific Summary "group by" constellations
+      System.Windows.Forms.ComboBox comboDim1Filter = new System.Windows.Forms.ComboBox();
+      comboDim1Filter.FormattingEnabled = true;
+      comboDim1Filter.Location = new System.Drawing.Point(204, 28);
+      comboDim1Filter.Name = "comboDim1Filter." + appId;
+      comboDim1Filter.Size = new System.Drawing.Size(200, 21);
+      comboDim1Filter.TabIndex = 0;
+      comboDim1Filter.Top = 0;
+      comboDim1Filter.Left = 204;
+      comboDim1Filter.Items.Add("Dimension 1");
+      comboDim1Filter.SelectedIndex = 0;
+
+      // Create some filters so that user can focus on specific Summary "group by" constellations
+      System.Windows.Forms.ComboBox comboDim2Filter = new System.Windows.Forms.ComboBox();
+      comboDim2Filter.FormattingEnabled = true;
+      comboDim2Filter.Location = new System.Drawing.Point(408, 28);
+      comboDim2Filter.Name = "comboDim2Filter." + appId;
+      comboDim2Filter.Size = new System.Drawing.Size(200, 21);
+      comboDim2Filter.TabIndex = 0;
+      comboDim2Filter.Top = 0;
+      comboDim2Filter.Left = 408;
+      comboDim2Filter.Items.Add("Dimension 2");
+      comboDim2Filter.SelectedIndex = 0;
+
+      // Create some filters so that user can focus on specific Summary "group by" constellations
+      System.Windows.Forms.ComboBox comboDim3Filter = new System.Windows.Forms.ComboBox();
+      comboDim3Filter.FormattingEnabled = true;
+      comboDim3Filter.Location = new System.Drawing.Point(612, 28);
+      comboDim3Filter.Name = "comboDim3Filter." + appId;
+      comboDim3Filter.Size = new System.Drawing.Size(200, 21);
+      comboDim3Filter.TabIndex = 0;
+      comboDim3Filter.Top = 0;
+      comboDim3Filter.Left = 612;
+      comboDim3Filter.Items.Add("Dimension 3");
+      comboDim3Filter.SelectedIndex = 0;
+
+      // Buttons ...
+      System.Windows.Forms.Button buttonSetSummaryDimensions = new System.Windows.Forms.Button();
+      buttonSetSummaryDimensions.Image = global::taoGUI.Properties.Resources.Dots;
+      buttonSetSummaryDimensions.Location = new System.Drawing.Point(818, -1);
+      buttonSetSummaryDimensions.Name = "buttonSetSummaryDimensions";
+      buttonSetSummaryDimensions.Size = new System.Drawing.Size(24, 23);
+      buttonSetSummaryDimensions.TabIndex = 0;
+      buttonSetSummaryDimensions.Top = -1;
+      buttonSetSummaryDimensions.Left = 818;
+      buttonSetSummaryDimensions.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonSetSummaryDimensions.UseVisualStyleBackColor = true;
+      buttonSetSummaryDimensions.Click += new EventHandler((sender, e) => button_SetSummaryDimensions(sender, e));
+
+      // Attach the data grid view to a container, add pading top to the container (24px) to give room to some controls (e.g. drop down list and search)
+      tabPageContent.Controls.Add(comboDbConnSummary);
+      tabPageContent.Controls.Add(comboDim1Filter);
+      tabPageContent.Controls.Add(comboDim2Filter);
+      tabPageContent.Controls.Add(comboDim3Filter);
+      tabPageContent.Controls.Add(buttonSetSummaryDimensions);
+
+      // Finally set up button tool-tips...
+      ToolTip toolTip1 = new ToolTip();
+      // Set up the delays for the ToolTip.
+      toolTip1.AutoPopDelay = 5000;
+      toolTip1.InitialDelay = 1000;
+      toolTip1.ReshowDelay = 500;
+      // Force the ToolTip text to be displayed whether or not the form is active.
+      toolTip1.ShowAlways = true;
+      // Set up the ToolTip text for the Combobox and Buttons.
+      toolTip1.SetToolTip(comboDbConnSummary, "Select the database instance relevant to the Tao Suite Reports");
+      toolTip1.SetToolTip(comboDim1Filter, "Group the project summary by the first dimension");
+      toolTip1.SetToolTip(comboDim2Filter, "Group the project summary by the second dimension");
+      toolTip1.SetToolTip(comboDim2Filter, "Group the project summary by the third dimension");
+      toolTip1.SetToolTip(buttonSetSummaryDimensions, "Define the group-by dimensions for the project summary");
+
+    }
+
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {
       switch (tabReportName) {
         case "Tao Suite Reports":
           addTabContentTaoSuiteReports(appId, tabPageContent);
           break;
         case "Summary":
+          addTabContentSummary(appId, tabPageContent);
           break;
         case "Velocity":
           break;
