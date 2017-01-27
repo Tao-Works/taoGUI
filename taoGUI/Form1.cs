@@ -923,12 +923,124 @@ namespace taoGUI {
       toolTip1.SetToolTip(buttonExportTaoSuiteSummary, "Export the Tao Suite Reports view to Microsoft Excel");
     }
 
+    private void button_SetSummaryDimensions(object sender, EventArgs e) {
+      formGroupByDimensions newProj = new formGroupByDimensions(this); // Passing master form to trigger master-form refresh after sub-form commit
+      newProj.ShowDialog();
+    }
+
+    private void addTabContentSummary(string appId, TabPage tabPageContent) {
+
+      string projectRootFolder = getProjectFolderName(appId) + @"\" + appId;
+
+      // Create a "ribbon" effect for various control items (like filters and search)
+      tabPageContent.Padding = new Padding(0, 24, 0, 0);
+
+      // Create a database selector so that users can switch between instances and compare results
+      System.Windows.Forms.ComboBox comboDbConnSummary = new System.Windows.Forms.ComboBox();
+      comboDbConnSummary.FormattingEnabled = true;
+      comboDbConnSummary.Location = new System.Drawing.Point(4, 28);
+      comboDbConnSummary.Name = "comboDbConnSummary." + appId;
+      comboDbConnSummary.Size = new System.Drawing.Size(200, 21);
+      comboDbConnSummary.TabIndex = 0;
+      comboDbConnSummary.Top = 0;
+      comboDbConnSummary.Left = 0;
+      comboDbConnSummary.Items.Add("All Database Connections");
+      comboDbConnSummary.SelectedIndex = 0;
+      // Read the connection files in the project config area
+      string dirLocOfDbConnection = projectRootFolder + @"\conf";
+      if (System.IO.Directory.Exists(dirLocOfDbConnection)) {
+        string[] dbConnections = System.IO.Directory.GetFiles(dirLocOfDbConnection);
+        foreach (string fileName in dbConnections) {
+          string ConnectionName = fileName.Substring(fileName.LastIndexOf("\\") + 1);
+          if (ConnectionName.Contains("Connection.")) {
+            string dbConnection = ConnectionName.Substring(11);
+            comboDbConnSummary.Items.Add(dbConnection.Substring(0, dbConnection.IndexOf(".")));
+            comboDbConnSummary.SelectedIndex++;
+          }
+        }
+      }
+      string dbInstance = comboDbConnSummary.Items[comboDbConnSummary.SelectedIndex].ToString();
+
+      // Create some filters so that user can focus on specific Summary "group by" constellations
+      System.Windows.Forms.ComboBox comboDim1Filter = new System.Windows.Forms.ComboBox();
+      comboDim1Filter.FormattingEnabled = true;
+      comboDim1Filter.Location = new System.Drawing.Point(204, 28);
+      comboDim1Filter.Name = "comboDim1Filter." + appId;
+      comboDim1Filter.Size = new System.Drawing.Size(200, 21);
+      comboDim1Filter.TabIndex = 0;
+      comboDim1Filter.Top = 0;
+      comboDim1Filter.Left = 204;
+      comboDim1Filter.Items.Add("Dimension 1");
+      comboDim1Filter.SelectedIndex = 0;
+
+      // Create some filters so that user can focus on specific Summary "group by" constellations
+      System.Windows.Forms.ComboBox comboDim2Filter = new System.Windows.Forms.ComboBox();
+      comboDim2Filter.FormattingEnabled = true;
+      comboDim2Filter.Location = new System.Drawing.Point(408, 28);
+      comboDim2Filter.Name = "comboDim2Filter." + appId;
+      comboDim2Filter.Size = new System.Drawing.Size(200, 21);
+      comboDim2Filter.TabIndex = 0;
+      comboDim2Filter.Top = 0;
+      comboDim2Filter.Left = 408;
+      comboDim2Filter.Items.Add("Dimension 2");
+      comboDim2Filter.SelectedIndex = 0;
+
+      // Create some filters so that user can focus on specific Summary "group by" constellations
+      System.Windows.Forms.ComboBox comboDim3Filter = new System.Windows.Forms.ComboBox();
+      comboDim3Filter.FormattingEnabled = true;
+      comboDim3Filter.Location = new System.Drawing.Point(612, 28);
+      comboDim3Filter.Name = "comboDim3Filter." + appId;
+      comboDim3Filter.Size = new System.Drawing.Size(200, 21);
+      comboDim3Filter.TabIndex = 0;
+      comboDim3Filter.Top = 0;
+      comboDim3Filter.Left = 612;
+      comboDim3Filter.Items.Add("Dimension 3");
+      comboDim3Filter.SelectedIndex = 0;
+
+      // Buttons ...
+      System.Windows.Forms.Button buttonSetSummaryDimensions = new System.Windows.Forms.Button();
+      buttonSetSummaryDimensions.Image = global::taoGUI.Properties.Resources.Dots;
+      buttonSetSummaryDimensions.Location = new System.Drawing.Point(818, -1);
+      buttonSetSummaryDimensions.Name = "buttonSetSummaryDimensions";
+      buttonSetSummaryDimensions.Size = new System.Drawing.Size(24, 23);
+      buttonSetSummaryDimensions.TabIndex = 0;
+      buttonSetSummaryDimensions.Top = -1;
+      buttonSetSummaryDimensions.Left = 818;
+      buttonSetSummaryDimensions.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+      buttonSetSummaryDimensions.UseVisualStyleBackColor = true;
+      buttonSetSummaryDimensions.Click += new EventHandler((sender, e) => button_SetSummaryDimensions(sender, e));
+
+      // Attach the data grid view to a container, add pading top to the container (24px) to give room to some controls (e.g. drop down list and search)
+      tabPageContent.Controls.Add(comboDbConnSummary);
+      tabPageContent.Controls.Add(comboDim1Filter);
+      tabPageContent.Controls.Add(comboDim2Filter);
+      tabPageContent.Controls.Add(comboDim3Filter);
+      tabPageContent.Controls.Add(buttonSetSummaryDimensions);
+
+      // Finally set up button tool-tips...
+      ToolTip toolTip1 = new ToolTip();
+      // Set up the delays for the ToolTip.
+      toolTip1.AutoPopDelay = 5000;
+      toolTip1.InitialDelay = 1000;
+      toolTip1.ReshowDelay = 500;
+      // Force the ToolTip text to be displayed whether or not the form is active.
+      toolTip1.ShowAlways = true;
+      // Set up the ToolTip text for the Combobox and Buttons.
+      toolTip1.SetToolTip(comboDbConnSummary, "Select the database instance relevant to the Tao Suite Reports");
+      toolTip1.SetToolTip(comboDim1Filter, "Group the project summary by the first dimension");
+      toolTip1.SetToolTip(comboDim2Filter, "Group the project summary by the second dimension");
+      toolTip1.SetToolTip(comboDim2Filter, "Group the project summary by the third dimension");
+      toolTip1.SetToolTip(buttonSetSummaryDimensions, "Define the group-by dimensions for the project summary");
+
+    }
+
     private void addTabContent(string appId, string tabReportName, TabPage tabPageContent) {
       switch (tabReportName) {
         case "Tao Suite Reports":
           addTabContentTaoSuiteReports(appId, tabPageContent);
           break;
         case "Summary":
+          addTabContentSummary(appId, tabPageContent);
           break;
         case "Velocity":
           break;
