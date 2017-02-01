@@ -82,16 +82,21 @@ namespace taoGUI.Json {
     }
 
     /*
-     * {
-     *   "dimension" : "Functional",
-     *   "attributes" : [ "Parties", "Products", "Reporting", "Reconciliation" ]
-     * },
+     * [
+     *   {
+     *     "dimension" : "Functional",
+     *     "attributes" : [ "Parties", "Products", "Reporting", "Reconciliation" ]
+     *   }
+     * ]
      */
     public class TaoJsonGroupByDimension {
       public string dimension { get; set; }
       public List<string> attributes { get; set; }
     }
 
+    /**
+     * Reader helper that filtes any comment lines (starting with #) and replaces escape backslaches 
+     */
     private static string getJsonStrFromFile(string fileLocation) {
       StringBuilder sb = new StringBuilder();
       if (File.Exists(fileLocation)) {

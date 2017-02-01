@@ -50,7 +50,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="TaoCache_Test.cs" />
+    <Compile Include="Caching\DataTableReaderWriter_Test.cs" />
+    <Compile Include="Caching\TaoStatAccessor_Test.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -58,9 +59,6 @@
       <Project>{F42001EB-FA1F-4728-B83F-418D0F0A7DC0}</Project>
       <Name>taoGUI</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
