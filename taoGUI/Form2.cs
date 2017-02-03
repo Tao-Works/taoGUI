@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace taoGUI {
         // Standard folder structure applies: conf, doc, run, etc...
         string rootPath = textBoxApplicationFolder.Text;
         string applicationPath = rootPath + "\\" + textBoxApplicationName.Text;
-        if (!System.IO.Directory.Exists(rootPath)) {
+        if (!Directory.Exists(rootPath)) {
           if (MessageBox.Show("The Tao root folder '" + rootPath + "' does not exist. Do you want to create it?", "New Tao Application", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No) {
             MessageBox.Show("Creation of Tao application '" + textBoxApplicationName.Text + "' aborted.", "New Tao Application", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
           } else {
@@ -50,7 +51,7 @@ namespace taoGUI {
             createTIF = true;
           }
         } else {
-          if (System.IO.Directory.Exists(applicationPath)) {
+          if (Directory.Exists(applicationPath)) {
             MessageBox.Show("Tao folder '" + applicationPath + "' already exists.  Unable to create Tao application.", "New Tao Application", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
           } else {
             rootPath = applicationPath;
@@ -60,7 +61,7 @@ namespace taoGUI {
         }
         if (createTIF) {
           // Create root folder...
-          System.IO.DirectoryInfo rootFolder = new System.IO.DirectoryInfo(rootPath);
+          DirectoryInfo rootFolder = new DirectoryInfo(rootPath);
           rootFolder.Create();
           if (applicationPath.Length > 0) {
             rootFolder.CreateSubdirectory(applicationPath);
@@ -71,7 +72,7 @@ namespace taoGUI {
           string taoConfLocation = rootPath + "\\" + applicationPath + @"conf\TaoSuite.conf";
           string applicationNode = textBoxApplicationName.Text.Substring(textBoxApplicationName.Text.LastIndexOf(".") + 1);
           string databaseNode = "Db" + applicationNode.Substring(0, 1).ToUpper() + applicationNode.Substring(1).ToLower();
-          using (System.IO.StreamWriter sw = System.IO.File.CreateText(taoConfLocation)) {
+          using (StreamWriter sw = File.CreateText(taoConfLocation)) {
             sw.WriteLine("# -- DATA START --");
             sw.WriteLine("[");
             sw.WriteLine("   {");
@@ -102,7 +103,7 @@ namespace taoGUI {
           // Create SqlScript.conf file...
           string sqlConfLocation = rootPath + "\\" + applicationPath + @"conf\SqlScript.conf";
           string sqlDbFolder = "db" + applicationNode.Substring(0, 1).ToUpper() + applicationNode.Substring(1).ToLower();
-          using (System.IO.StreamWriter sw = System.IO.File.CreateText(sqlConfLocation)) {
+          using (StreamWriter sw = File.CreateText(sqlConfLocation)) {
             sw.WriteLine("# -- DATA START --");
             sw.WriteLine("[");
             sw.WriteLine("   {");
@@ -119,7 +120,7 @@ namespace taoGUI {
           string issueDate = DateTime.Now.ToString("yyyy-MM-dd");
           string expiryDate = monthCalendarExpiry.SelectionRange.Start.Date.ToString("yyyy-MM-dd");
           string licDataLocation = rootPath + "\\" + applicationPath + @"conf\LicData_" + textBoxCompanyId.Text + "_" + textBoxProjectId.Text + "_" + textBoxUserId.Text + "_" + expiryDate + "_V01-00.txt";
-          using (System.IO.StreamWriter sw = System.IO.File.CreateText(licDataLocation)) {
+          using (StreamWriter sw = File.CreateText(licDataLocation)) {
             sw.WriteLine("###########################################");
             sw.WriteLine("# Tao Licence file in plain text");
             sw.WriteLine("#");
@@ -136,7 +137,7 @@ namespace taoGUI {
           }
           // Create database connection configuration files...
           string oracleConfLocation = rootPath + "\\" + applicationPath + @"conf\Connection.Oracle.conf";
-          using (System.IO.StreamWriter sw = System.IO.File.CreateText(oracleConfLocation)) {
+          using (StreamWriter sw = File.CreateText(oracleConfLocation)) {
             sw.WriteLine("# -- DATA START --");
             sw.WriteLine("[");
             sw.WriteLine("   {");
@@ -152,7 +153,7 @@ namespace taoGUI {
             sw.Close();
           }
           string h2ConfLocation = rootPath + "\\" + applicationPath + @"conf\Connection.H2.conf";
-          using (System.IO.StreamWriter sw = System.IO.File.CreateText(h2ConfLocation)) {
+          using (StreamWriter sw = File.CreateText(h2ConfLocation)) {
             sw.WriteLine("# -- DATA START --");
             sw.WriteLine("[");
             sw.WriteLine("   {");
@@ -171,7 +172,7 @@ namespace taoGUI {
           rootFolder.CreateSubdirectory(applicationPath + "doc");
           rootFolder.CreateSubdirectory(applicationPath + "run");
           string runCmdLocation = rootPath + "\\" + applicationPath + @"run\" + applicationNode + ".taoProgramStarter.cmd";
-          using (System.IO.StreamWriter sw = System.IO.File.CreateText(runCmdLocation)) {
+          using (StreamWriter sw = File.CreateText(runCmdLocation)) {
             sw.WriteLine("@echo off");
             sw.WriteLine("");
             sw.WriteLine(":: Declare globals variables here...");
@@ -236,8 +237,8 @@ namespace taoGUI {
         }
         // Check the files, load the content, display the results and disable the Tao Licence group...
         if (importLicenceKey != null && importLicenceText != null) {
-          System.IO.FileInfo keyInfo = new System.IO.FileInfo(importLicenceKey);
-          System.IO.FileInfo textInfo = new System.IO.FileInfo(importLicenceText);
+          FileInfo keyInfo = new FileInfo(importLicenceKey);
+          FileInfo textInfo = new FileInfo(importLicenceText);
           try {
             if (keyInfo.Length > 0) {
               // Copy licence key to new Tao application area
