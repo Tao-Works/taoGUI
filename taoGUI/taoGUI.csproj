@@ -66,6 +66,7 @@
     <Compile Include="AboutBox1.Designer.cs">
       <DependentUpon>AboutBox1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Caching\DataTableReadWriter.cs" />
     <Compile Include="Form3.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -81,6 +82,7 @@
     <Compile Include="taoProgressBar.Designer.cs">
       <DependentUpon>taoProgressBar.cs</DependentUpon>
     </Compile>
+    <Compile Include="Caching\TaoStatAccessor.cs" />
     <Compile Include="taoReportCache.cs" />
     <Compile Include="taoReportReader.cs" />
     <Compile Include="Form1.cs">
@@ -131,8 +133,6 @@
     <EmbeddedResource Include="TaoSuiteReportChart.resx">
       <DependentUpon>TaoSuiteReportChart.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="ClassDiagram2.cd" />
-    <None Include="ClassDiagram3.cd" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

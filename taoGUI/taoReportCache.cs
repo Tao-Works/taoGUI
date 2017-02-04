@@ -35,6 +35,7 @@ namespace taoGUI {
       public int totalPass;
       public double overallPassRate;
 
+
       // Helper methods (getters, setters, etc.)
       public TaoSamplePoint( string sampleResultFile ) {
 
@@ -48,10 +49,10 @@ namespace taoGUI {
         sampleHour = Convert.ToInt32(tmpTaoGenerated.Substring(11, 2));
         sampleMinute = Convert.ToInt32(tmpTaoGenerated.Substring(13, 2));
 
-        TaoReportReader taoSuiteResults = new TaoReportReader(sampleResultFile);
+        TaoReportReader taoSuiteResults = TaoReportReader.parseFile(sampleResultFile);
 
         totalTests = taoSuiteResults.getTotalTests();
-        totalPass = taoSuiteResults.getPairsThatAreEqual();
+        totalPass = taoSuiteResults.getTotalPass();
         overallPassRate = taoSuiteResults.getOverallPassRate();
 
       }
@@ -344,7 +345,7 @@ namespace taoGUI {
         calcProgress.Refresh();
         string targetFilename = r["passRateLocation"].ToString();
         if (targetFilename.Length > 0 && File.Exists(targetFilename)) {
-          TaoReportReader lastKnownTao = new TaoReportReader(targetFilename);
+          TaoReportReader lastKnownTao = TaoReportReader.parseFile(targetFilename);
           taoPassRate = lastKnownTao.getOverallPassRate();
         }
         r["passRate"] = taoPassRate;
@@ -356,7 +357,7 @@ namespace taoGUI {
         calcProgress.Refresh();
         targetFilename = r["passRateDeltaLocation"].ToString();
         if (targetFilename.Length > 0 && File.Exists(targetFilename)) {
-          TaoReportReader previousKnownTao = new TaoReportReader(targetFilename);
+          TaoReportReader previousKnownTao = TaoReportReader.parseFile(targetFilename);
           previousTaoPassRate = previousKnownTao.getOverallPassRate();
         }
         r["passRateDelta"] = taoPassRate - previousTaoPassRate;

@@ -264,7 +264,7 @@ namespace taoGUI {
           TreeNode fileStrctNode = prjNode.Nodes.Add(applicationId + "|file", "File Structure");
           string appFolderName = ctx.getAppFolder();
           if (System.IO.Directory.Exists(appFolderName)) {
-            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(appFolderName);
+            var di = new DirectoryInfo(appFolderName);
             walkDirectoryStructure(di, fileStrctNode, applicationId + "|file");
           }
         }
@@ -273,9 +273,9 @@ namespace taoGUI {
 
     public void addProjectFile(string appName, string appDesc, string appFolder) {
       string fileLocation = TAO_PROJECT_FILE;
-      if (!System.IO.File.Exists(fileLocation)) {
+      if (!File.Exists(fileLocation)) {
         // Create a file to write to.
-        using (System.IO.StreamWriter sw = System.IO.File.CreateText(fileLocation)) {
+        using (StreamWriter sw = File.CreateText(fileLocation)) {
           sw.WriteLine("# -- DATA START --");
           sw.WriteLine("[");
           sw.WriteLine("   {");
@@ -290,11 +290,11 @@ namespace taoGUI {
         }
       } else {
         // Cut last three lines off ...
-        var lines = System.IO.File.ReadAllLines(fileLocation);
-        System.IO.File.WriteAllLines(fileLocation, lines.Take(lines.Length - 3).ToArray());
+        var lines = File.ReadAllLines(fileLocation);
+        File.WriteAllLines(fileLocation, lines.Take(lines.Length - 3).ToArray());
 
         // This text is always added, making the file longer over time (if it is not deleted).
-        using (System.IO.StreamWriter sw = System.IO.File.AppendText(fileLocation)) {
+        using (StreamWriter sw = File.AppendText(fileLocation)) {
           sw.WriteLine("   },");
           sw.WriteLine("   {");
           sw.WriteLine("      \"applicationId\" : \"" + appName + "\",");
@@ -333,7 +333,7 @@ namespace taoGUI {
       string fileLocation = TAO_PROJECT_FILE;
       string tempFile = System.IO.Path.GetTempFileName();
       using (var sr = new System.IO.StreamReader(fileLocation))
-      using (var sw = new System.IO.StreamWriter(tempFile)) {
+      using (var sw = new StreamWriter(tempFile)) {
         string line = string.Empty;
         while ((line = sr.ReadLine()) != null) {
           if ((line.Contains("\"applicationId\"") && line.Contains(appName))) {
@@ -345,8 +345,8 @@ namespace taoGUI {
           }
         }
       }
-      System.IO.File.Delete(fileLocation);
-      System.IO.File.Move(tempFile, fileLocation);
+      File.Delete(fileLocation);
+      File.Move(tempFile, fileLocation);
     }
 
     private void alwaysOn_DrawNode(object sender, DrawTreeNodeEventArgs e) {
@@ -414,8 +414,8 @@ namespace taoGUI {
         }
         // Check the files, load the content, display the results and disable the Tao Licence group...
         if (importLicenceKey != null && importLicenceText != null) {
-          System.IO.FileInfo keyInfo = new System.IO.FileInfo(importLicenceKey);
-          System.IO.FileInfo textInfo = new System.IO.FileInfo(importLicenceText);
+          FileInfo keyInfo = new FileInfo(importLicenceKey);
+          FileInfo textInfo = new FileInfo(importLicenceText);
           try {
             if (keyInfo.Length > 0) {
               // Copy licence key to new Tao application area
@@ -559,14 +559,15 @@ namespace taoGUI {
           tabCtrlAppStatus.SelectedIndex = currentTab;
         } else {
           appStatusTabPages.Add(new TabPage());
-          tabCtrlAppStatus.Controls.Add(appStatusTabPages[totalTabs]);
-          appStatusTabPages[totalTabs].Location = new System.Drawing.Point(4, 4);
-          appStatusTabPages[totalTabs].Name = "appStatusTabPages_" + totalTabs.ToString();
-          appStatusTabPages[totalTabs].Padding = new System.Windows.Forms.Padding(3);
-          appStatusTabPages[totalTabs].Size = new System.Drawing.Size(528, 335);
-          appStatusTabPages[totalTabs].TabIndex = totalTabs;
-          appStatusTabPages[totalTabs].Text = appId;
-          appStatusTabPages[totalTabs].UseVisualStyleBackColor = true;
+          var totalTabForm = appStatusTabPages[totalTabs];
+          tabCtrlAppStatus.Controls.Add(totalTabForm);
+          totalTabForm.Location = new System.Drawing.Point(4, 4);
+          totalTabForm.Name = "appStatusTabPages_" + totalTabs.ToString();
+          totalTabForm.Padding = new System.Windows.Forms.Padding(3);
+          totalTabForm.Size = new System.Drawing.Size(528, 335);
+          totalTabForm.TabIndex = totalTabs;
+          totalTabForm.Text = appId;
+          totalTabForm.UseVisualStyleBackColor = true;
           tabCtrlAppStatus.SelectedIndex = totalTabs;
         }
       }
@@ -835,7 +836,6 @@ namespace taoGUI {
     }
 
     private void button_OpenTaoSuiteReport(object sender, EventArgs e, string projectRootFolder, DataGridView taoSheetData, string dbInstance) {
-
       Excel.Application xlApp = null;
       Excel.Workbook xlWorkbook = null;
 
@@ -882,7 +882,7 @@ namespace taoGUI {
         }
       }
       foreach (string ts in taoSheets) {
-        if (System.IO.File.Exists(ts)) {
+        if (File.Exists(ts)) {
           xlWorkbook = xlApp.Workbooks.Open(ts, true, false); // Update links (e.g. parameter files) and allow user to read and write as necessary
         }
       }
@@ -927,7 +927,7 @@ namespace taoGUI {
         }
       }
       foreach (string ts in taoSheets) {
-        if (System.IO.File.Exists(ts)) {
+        if (File.Exists(ts)) {
           xlWorkbook = xlApp.Workbooks.Open(ts, true, false); // Update links (e.g. parameter files) and allow user to read and write as necessary
         }
       }

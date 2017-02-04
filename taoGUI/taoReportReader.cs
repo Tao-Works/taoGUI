@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using taoGUI.TaoReader;
+using taoGUI.TaoBeanReader;
 
 namespace taoGUI {
-  class TaoReportReader {
+  public class TaoReportReader {
     private int _sumTotalTests;
     private int _sumPairsThatAreEqual;
     private double _overallPassRate;
@@ -20,69 +21,65 @@ namespace taoGUI {
       _overallPassRate = 0.0;
     }
 
-    public TaoReportReader(string taoReportFilename) {
-      try {
-        initialiseTaoSummaryValues();
-        string result = string.Empty;
-        Exception exception = null;
-        OleDbCommand oComm = null;
-        OleDbDataReader oRdr = null;
-        DataTable oTbl = null;
-        string sConnString = string.Empty;
-        string sCommand = string.Empty;
-        OleDbConnection oConn = new OleDbConnection();
-        if (System.IO.File.Exists(taoReportFilename)) {
-          try {
+    public static TaoReportReader parseFile(string taoReportFilename) {
+      var taoReportFi = new FileInfo(taoReportFilename);
+      return parseFile(taoReportFi);
+    }
 
-            // Read Excel via Jet OLEB
-            string connectVersion = taoReportFilename.EndsWith("xls") ? "Excel 8.0" : "Excel 12.0";
-            sConnString = @"Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + taoReportFilename + ";Extended Properties='" + connectVersion + ";HDR=No;READONLY=TRUE';";
-            oConn.ConnectionString = sConnString;
-            oConn.Open();
-            oComm = new OleDbCommand(@"SELECT * FROM [Summary$]", oConn);
-            oRdr = oComm.ExecuteReader();
-            oTbl = new DataTable();
-            oTbl.Load(oRdr);
-            oTbl.Select();
+    public static TaoReportReader parseFile(FileInfo taoReportFi) {
+      return new TaoReportReader(taoReportFi);
+    }
 
-            // Read TaoBean 
-            ToaBeanReader taoBeanReader = new ToaBeanReader(oTbl);
-            DataTable taoBeanTable = taoBeanReader.getTeoBeanTable("TaoSuiteSummary");
+    private TaoReportReader(FileInfo taoReportFi) {
+      initialiseTaoSummaryValues();
+      string result = string.Empty;
+      Exception exception = null;
+      OleDbCommand oComm = null;
+      OleDbDataReader oRdr = null;
+      DataTable oTbl = null;
+      string sConnString = string.Empty;
+      string sCommand = string.Empty;
+      OleDbConnection oConn = new OleDbConnection();
+      if (taoReportFi.Exists) {
+        try {
+          // Read Excel via Jet OLEB
+          string connectVersion = taoReportFi.Extension.EndsWith("xls") ? "Excel 8.0" : "Excel 12.0";
+          sConnString = @"Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + taoReportFi.FullName + ";Extended Properties='" + connectVersion + ";HDR=No;READONLY=TRUE';";
+          oConn.ConnectionString = sConnString;
+          oConn.Open();
+          oComm = new OleDbCommand(@"SELECT * FROM [Summary$]", oConn);
+          oRdr = oComm.ExecuteReader();
+          oTbl = new DataTable();
+          oTbl.Load(oRdr);
+          oTbl.Select();
 
-            // Calculate pass rates
-            _sumTotalTests = taoBeanTable.AsEnumerable().Sum(c => Convert.ToInt32(c.Field<string>("Total_Tests")));
-            _sumPairsThatAreEqual = taoBeanTable.AsEnumerable().Sum(c => Convert.ToInt32(c.Field<string>("Pairs_that_are_Equal")));
-            if (_sumTotalTests > 0) {
-              _overallPassRate = ((double)_sumPairsThatAreEqual / (double)_sumTotalTests) * 100.0;
-            }
+          // Read TaoBean 
+          ToaBeanReader taoBeanReader = new ToaBeanReader(oTbl);
+          DataTable taoBeanTable = taoBeanReader.getTeoBeanTable("TaoSuiteSummary");
 
-          } catch (Exception ex) {
-            Console.WriteLine(ex.Message);
-            Console.WriteLine(ex.StackTrace);
-            exception = ex;
-          } finally {
-            if (oRdr != null) {
-              oRdr.Close();
-            }
-            if (oTbl != null) {
-              oTbl.Dispose();
-            }
-            if (oComm != null) {
-              oComm.Dispose();
-            }
-            if (oConn != null) {
-              oConn.Close();
-            }
+          // Calculate pass rates
+          _sumTotalTests = taoBeanTable.AsEnumerable().Sum(c => Convert.ToInt32(c.Field<string>("Total_Tests")));
+          _sumPairsThatAreEqual = taoBeanTable.AsEnumerable().Sum(c => Convert.ToInt32(c.Field<string>("Pairs_that_are_Equal")));
+          if (_sumTotalTests > 0) {
+            _overallPassRate = ((double)_sumPairsThatAreEqual / (double)_sumTotalTests) * 100.0;
           }
-          if (exception != null) {
-            throw exception;
+        } finally {
+          if (oRdr != null) {
+            oRdr.Close();
+          }
+          if (oTbl != null) {
+            oTbl.Dispose();
+          }
+          if (oComm != null) {
+            oComm.Dispose();
+          }
+          if (oConn != null) {
+            oConn.Close();
           }
         }
-      } catch (Exception ex) {
-        Console.WriteLine(ex.Message);
-        Console.WriteLine(ex.StackTrace);
-        // TODO Sam: handle exceptips in C#   
-      } finally {
+        if (exception != null) {
+          throw exception;
+        }
       }
     }
 
@@ -94,7 +91,7 @@ namespace taoGUI {
       return _sumTotalTests;
     }
 
-    public int getPairsThatAreEqual() {
+    public int getTotalPass() {
       return _sumPairsThatAreEqual;
     }
 
