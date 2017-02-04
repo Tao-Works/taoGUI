@@ -16,7 +16,7 @@ namespace taoGUI {
       public string appId;                          // The Tao application reference (e.g. tao.baer.conf.emir for all EMIR related)
       public string dbInstance;                     // DB instance (like Oracle, H2, or some reference to a remote / cloud service)
       public string cacheLocation;                  // Location of the Tao Suite Report Cache (where summary statistics are cached)
-      public string chartDataFolderPrefix;           // Folder prefix of the pass / fail bar chart cache (contains individual sample points as percentages)
+      public string chartDataFolderPrefix;          // Folder prefix of the pass / fail bar chart cache (contains individual sample points as percentages)
       public string taoSuiteInputFolder;            // Location of the Tao Suites
       public string taoSuiteOutputFolder;           // Location of the Tao Suite Reports
     };

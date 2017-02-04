@@ -40,6 +40,16 @@ namespace taoGUI.Json {
       return result;
     }
 
+    public static Dictionary<string, TaoJsonTaoSuiteDimensionMap> getTaoSuiteDimensionMap(string fileLocation) {
+      string jsonStr = getJsonStrFromFile(fileLocation);
+      var taoDimensionMap = JsonConvert.DeserializeObject<List<TaoJsonTaoSuiteDimensionMap>>(jsonStr);
+      var result = new Dictionary<string, TaoJsonTaoSuiteDimensionMap>();
+      foreach (TaoJsonTaoSuiteDimensionMap userMap in taoDimensionMap) {
+        result.Add(userMap.taoSuiteName, userMap);
+      }
+      return result;
+    }
+
     //----------------------------------
     // Json Classes
     //----------------------------------
@@ -90,6 +100,26 @@ namespace taoGUI.Json {
     public class TaoJsonGroupByDimension {
       public string dimension { get; set; }
       public List<string> attributes { get; set; }
+    }
+
+    /*
+     * {
+     *    "taoSuiteName" : "generate_BOM_Output_01.xls",
+     *    "groupByDimensions" : [
+     *          {
+     *             "dimension" : "Function",
+     *             "attributes" : [ "Reconciliation" ]
+     *          },
+     *          {
+     *             "dimension" : "Source System",
+     *             "attributes" : [ "Front Arena" ]
+     *          }
+     *       ]
+     * },
+     */
+    public class TaoJsonTaoSuiteDimensionMap {
+      public string taoSuiteName { get; set; }
+      public List<TaoJsonGroupByDimension> groupByDimensions { get; set; }
     }
 
     private static string getJsonStrFromFile(string fileLocation) {

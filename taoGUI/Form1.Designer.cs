@@ -31,10 +31,22 @@
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
       this.menuStrip1 = new System.Windows.Forms.MenuStrip();
       this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.projectToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+      this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+      this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+      this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.taoSuiteReportsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.summaryOfDoneToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.velocityOfToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.taoApplicationStatisticsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.weatherReportsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.summaryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+      this.forecastToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.projectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.buildToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.debugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -47,18 +59,6 @@
       this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
       this.taoProjectView = new System.Windows.Forms.TreeView();
       this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-      this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.projectToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-      this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.taoSuiteReportsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.summaryOfDoneToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.velocityOfToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.taoApplicationStatisticsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.weatherReportsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.summaryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-      this.forecastToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
       this.menuStrip1.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
       this.splitContainer1.Panel1.SuspendLayout();
@@ -98,15 +98,63 @@
       this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
       this.fileToolStripMenuItem.Text = "&File";
       // 
+      // newToolStripMenuItem
+      // 
+      this.newToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.projectToolStripMenuItem1});
+      this.newToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("newToolStripMenuItem.Image")));
+      this.newToolStripMenuItem.Name = "newToolStripMenuItem";
+      this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
+      this.newToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+      this.newToolStripMenuItem.Text = "&New";
+      this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
+      // 
+      // projectToolStripMenuItem1
+      // 
+      this.projectToolStripMenuItem1.Image = ((System.Drawing.Image)(resources.GetObject("projectToolStripMenuItem1.Image")));
+      this.projectToolStripMenuItem1.Name = "projectToolStripMenuItem1";
+      this.projectToolStripMenuItem1.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
+            | System.Windows.Forms.Keys.N)));
+      this.projectToolStripMenuItem1.Size = new System.Drawing.Size(241, 22);
+      this.projectToolStripMenuItem1.Text = "&Tao Application...";
+      this.projectToolStripMenuItem1.Click += new System.EventHandler(this.projectToolStripMenuItem1_Click);
+      // 
+      // openToolStripMenuItem
+      // 
+      this.openToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("openToolStripMenuItem.Image")));
+      this.openToolStripMenuItem.Name = "openToolStripMenuItem";
+      this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
+      this.openToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+      this.openToolStripMenuItem.Text = "&Open";
+      this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
+      // 
       // toolStripSeparator1
       // 
       this.toolStripSeparator1.Name = "toolStripSeparator1";
       this.toolStripSeparator1.Size = new System.Drawing.Size(143, 6);
       // 
+      // closeToolStripMenuItem
+      // 
+      this.closeToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Cancel;
+      this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
+      this.closeToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.C)));
+      this.closeToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+      this.closeToolStripMenuItem.Text = "&Close";
+      this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
+      // 
       // toolStripMenuItem1
       // 
       this.toolStripMenuItem1.Name = "toolStripMenuItem1";
       this.toolStripMenuItem1.Size = new System.Drawing.Size(143, 6);
+      // 
+      // exitToolStripMenuItem
+      // 
+      this.exitToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("exitToolStripMenuItem.Image")));
+      this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+      this.exitToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.F4)));
+      this.exitToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+      this.exitToolStripMenuItem.Text = "E&xit";
+      this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
       // 
       // editToolStripMenuItem
       // 
@@ -125,6 +173,64 @@
       this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
       this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
       this.viewToolStripMenuItem.Text = "&View";
+      // 
+      // taoSuiteReportsToolStripMenuItem
+      // 
+      this.taoSuiteReportsToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Stats2;
+      this.taoSuiteReportsToolStripMenuItem.Name = "taoSuiteReportsToolStripMenuItem";
+      this.taoSuiteReportsToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.taoSuiteReportsToolStripMenuItem.Text = "Tao Suite &Reports";
+      this.taoSuiteReportsToolStripMenuItem.Click += new System.EventHandler(this.taoSuiteReportsToolStripMenuItem_Click);
+      // 
+      // summaryOfDoneToolStripMenuItem
+      // 
+      this.summaryOfDoneToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Stats;
+      this.summaryOfDoneToolStripMenuItem.Name = "summaryOfDoneToolStripMenuItem";
+      this.summaryOfDoneToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.summaryOfDoneToolStripMenuItem.Text = "Summary of &Done";
+      this.summaryOfDoneToolStripMenuItem.Click += new System.EventHandler(this.summaryOfDoneToolStripMenuItem_Click);
+      // 
+      // velocityOfToolStripMenuItem
+      // 
+      this.velocityOfToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Dots_Up;
+      this.velocityOfToolStripMenuItem.Name = "velocityOfToolStripMenuItem";
+      this.velocityOfToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.velocityOfToolStripMenuItem.Text = "&Velocity of Alignment";
+      this.velocityOfToolStripMenuItem.Click += new System.EventHandler(this.velocityOfToolStripMenuItem_Click);
+      // 
+      // taoApplicationStatisticsToolStripMenuItem
+      // 
+      this.taoApplicationStatisticsToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Percent;
+      this.taoApplicationStatisticsToolStripMenuItem.Name = "taoApplicationStatisticsToolStripMenuItem";
+      this.taoApplicationStatisticsToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.taoApplicationStatisticsToolStripMenuItem.Text = "Tao Application &Stability";
+      this.taoApplicationStatisticsToolStripMenuItem.Click += new System.EventHandler(this.taoApplicationStatisticsToolStripMenuItem_Click);
+      // 
+      // weatherReportsToolStripMenuItem
+      // 
+      this.weatherReportsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.summaryToolStripMenuItem,
+            this.forecastToolStripMenuItem});
+      this.weatherReportsToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Weather_Cloud;
+      this.weatherReportsToolStripMenuItem.Name = "weatherReportsToolStripMenuItem";
+      this.weatherReportsToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+      this.weatherReportsToolStripMenuItem.Text = "&Weather Report";
+      // 
+      // summaryToolStripMenuItem
+      // 
+      this.summaryToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Weather_Rain;
+      this.summaryToolStripMenuItem.Name = "summaryToolStripMenuItem";
+      this.summaryToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+      this.summaryToolStripMenuItem.Text = "C&urrent";
+      this.summaryToolStripMenuItem.Click += new System.EventHandler(this.summaryToolStripMenuItem_Click);
+      // 
+      // forecastToolStripMenuItem
+      // 
+      this.forecastToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Weather_Sun;
+      this.forecastToolStripMenuItem.Name = "forecastToolStripMenuItem";
+      this.forecastToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+      this.forecastToolStripMenuItem.Text = "&Forecast";
+      this.forecastToolStripMenuItem.Click += new System.EventHandler(this.forecastToolStripMenuItem_Click);
       // 
       // projectToolStripMenuItem
       // 
@@ -211,112 +317,6 @@
       this.splitContainer1.Size = new System.Drawing.Size(809, 385);
       this.splitContainer1.SplitterDistance = 269;
       this.splitContainer1.TabIndex = 2;
-      // 
-      // newToolStripMenuItem
-      // 
-      this.newToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.projectToolStripMenuItem1});
-      this.newToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("newToolStripMenuItem.Image")));
-      this.newToolStripMenuItem.Name = "newToolStripMenuItem";
-      this.newToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-      this.newToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
-      this.newToolStripMenuItem.Text = "&New";
-      this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
-      // 
-      // projectToolStripMenuItem1
-      // 
-      this.projectToolStripMenuItem1.Image = ((System.Drawing.Image)(resources.GetObject("projectToolStripMenuItem1.Image")));
-      this.projectToolStripMenuItem1.Name = "projectToolStripMenuItem1";
-      this.projectToolStripMenuItem1.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
-            | System.Windows.Forms.Keys.N)));
-      this.projectToolStripMenuItem1.Size = new System.Drawing.Size(241, 22);
-      this.projectToolStripMenuItem1.Text = "&Tao Application...";
-      this.projectToolStripMenuItem1.Click += new System.EventHandler(this.projectToolStripMenuItem1_Click);
-      // 
-      // openToolStripMenuItem
-      // 
-      this.openToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("openToolStripMenuItem.Image")));
-      this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-      this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-      this.openToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
-      this.openToolStripMenuItem.Text = "&Open";
-      this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
-      // 
-      // closeToolStripMenuItem
-      // 
-      this.closeToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Cancel;
-      this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-      this.closeToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.C)));
-      this.closeToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
-      this.closeToolStripMenuItem.Text = "&Close";
-      this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
-      // 
-      // exitToolStripMenuItem
-      // 
-      this.exitToolStripMenuItem.Image = ((System.Drawing.Image)(resources.GetObject("exitToolStripMenuItem.Image")));
-      this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-      this.exitToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.F4)));
-      this.exitToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
-      this.exitToolStripMenuItem.Text = "E&xit";
-      this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
-      // 
-      // taoSuiteReportsToolStripMenuItem
-      // 
-      this.taoSuiteReportsToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Stats2;
-      this.taoSuiteReportsToolStripMenuItem.Name = "taoSuiteReportsToolStripMenuItem";
-      this.taoSuiteReportsToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
-      this.taoSuiteReportsToolStripMenuItem.Text = "Tao Suite &Reports";
-      this.taoSuiteReportsToolStripMenuItem.Click += new System.EventHandler(this.taoSuiteReportsToolStripMenuItem_Click);
-      // 
-      // summaryOfDoneToolStripMenuItem
-      // 
-      this.summaryOfDoneToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Stats;
-      this.summaryOfDoneToolStripMenuItem.Name = "summaryOfDoneToolStripMenuItem";
-      this.summaryOfDoneToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
-      this.summaryOfDoneToolStripMenuItem.Text = "Summary of &Done";
-      this.summaryOfDoneToolStripMenuItem.Click += new System.EventHandler(this.summaryOfDoneToolStripMenuItem_Click);
-      // 
-      // velocityOfToolStripMenuItem
-      // 
-      this.velocityOfToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Dots_Up;
-      this.velocityOfToolStripMenuItem.Name = "velocityOfToolStripMenuItem";
-      this.velocityOfToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
-      this.velocityOfToolStripMenuItem.Text = "&Velocity of Alignment";
-      this.velocityOfToolStripMenuItem.Click += new System.EventHandler(this.velocityOfToolStripMenuItem_Click);
-      // 
-      // taoApplicationStatisticsToolStripMenuItem
-      // 
-      this.taoApplicationStatisticsToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Percent;
-      this.taoApplicationStatisticsToolStripMenuItem.Name = "taoApplicationStatisticsToolStripMenuItem";
-      this.taoApplicationStatisticsToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
-      this.taoApplicationStatisticsToolStripMenuItem.Text = "Tao Application &Stability";
-      this.taoApplicationStatisticsToolStripMenuItem.Click += new System.EventHandler(this.taoApplicationStatisticsToolStripMenuItem_Click);
-      // 
-      // weatherReportsToolStripMenuItem
-      // 
-      this.weatherReportsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.summaryToolStripMenuItem,
-            this.forecastToolStripMenuItem});
-      this.weatherReportsToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Weather_Cloud;
-      this.weatherReportsToolStripMenuItem.Name = "weatherReportsToolStripMenuItem";
-      this.weatherReportsToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
-      this.weatherReportsToolStripMenuItem.Text = "&Weather Report";
-      // 
-      // summaryToolStripMenuItem
-      // 
-      this.summaryToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Weather_Rain;
-      this.summaryToolStripMenuItem.Name = "summaryToolStripMenuItem";
-      this.summaryToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
-      this.summaryToolStripMenuItem.Text = "&Actual";
-      this.summaryToolStripMenuItem.Click += new System.EventHandler(this.summaryToolStripMenuItem_Click);
-      // 
-      // forecastToolStripMenuItem
-      // 
-      this.forecastToolStripMenuItem.Image = global::taoGUI.Properties.Resources.Weather_Sun;
-      this.forecastToolStripMenuItem.Name = "forecastToolStripMenuItem";
-      this.forecastToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
-      this.forecastToolStripMenuItem.Text = "&Forecast";
-      this.forecastToolStripMenuItem.Click += new System.EventHandler(this.forecastToolStripMenuItem_Click);
       // 
       // Form1
       // 

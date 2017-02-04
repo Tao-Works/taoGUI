@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -18,11 +19,223 @@ namespace taoGUI {
   public partial class Form1 : Form {
 
     public static string TAO_PROJECT_FILE = Application.StartupPath + @"\taoGUI.resources\projects.tao";
+    public static string TAO_DIMENSIONS_FILE = Application.StartupPath + @"\taoGUI.resources\dimensions.tao";
+
+    public struct DimensionAttributeMap {
+      public string dimension { get; set; }
+      public List<string> dimensionAttributes { get; set; }
+    }
+
+    public struct TaoSuiteDimensionMap {
+      public string taoSuiteName { get; set; }
+      public List<DimensionAttributeMap> taoGroupByAttributes { get; set; }
+    }
+
+    // Used for the drop-down ComboBoxes where "label" != "value" ...
+    public class ComboBoxItem {
+      public string Text { get; set; }
+      public object Value { get; set; }
+      public override string ToString() {
+        return Text.ToString();
+      }
+    }
+
+    // Represents the "chart" cell of a Summary of Done matrix
+    public class TaoSummaryChartMatrixCell {
+      public string chartTitle { get; set; }
+      public double testsPass { get; set; }
+      public double totalTests { get; set; }
+      public string rowDimension { get; set; }
+      public string rowAttribute { get; set; }
+      public string colDimension { get; set; }
+      public string colAttribute { get; set; }
+      public string ctxDimension { get; set; }
+      public string ctxAttribute { get; set; }
+      public List<string> relatedTaoSuites = new List<string>();
+
+      private void tagRelevantTaoSuites(List<TaoSuiteDimensionMap> userMap) {
+
+        List<string> xDimension = new List<string>();
+        List<string> yDimension = new List<string>();
+        List<string> zDimension = new List<string>();
+
+        foreach (TaoSuiteDimensionMap userDim in userMap) {
+
+          xDimension.Clear();
+          yDimension.Clear();
+          zDimension.Clear();
+
+          foreach (DimensionAttributeMap userAttr in userDim.taoGroupByAttributes) {
+
+            bool xValid = false;
+            bool yValid = false;
+            bool zValid = false;
+
+            // Row dimension / attributes...
+            if (String.IsNullOrEmpty(rowDimension)) {
+              xValid = true;
+            } else if (userAttr.dimension.Equals(rowDimension)) {
+              if (String.IsNullOrEmpty(rowAttribute)) {
+                xValid = true;
+              } else if (userAttr.dimensionAttributes.Contains(rowAttribute)) {
+                xValid = true;
+              }
+            }
+
+            // Column dimension / attributes...
+            if (String.IsNullOrEmpty(colDimension)) {
+              yValid = true;
+            } else if (userAttr.dimension.Equals(colDimension)) {
+              if (String.IsNullOrEmpty(colAttribute)) {
+                yValid = true;
+              } else if (userAttr.dimensionAttributes.Contains(colAttribute)) {
+                yValid = true;
+              }
+            }
+
+            // Context dimension / attributes...
+            if (String.IsNullOrEmpty(ctxDimension)) {
+              zValid = true;
+            } else if (userAttr.dimension.Equals(ctxDimension)) {
+              if (String.IsNullOrEmpty(ctxAttribute)) {
+                zValid = true;
+              } else if (userAttr.dimensionAttributes.Contains(ctxAttribute)) {
+                zValid = true;
+              }
+            }
+
+            // Tag?
+            if (xValid && !xDimension.Contains(userDim.taoSuiteName)) {
+              xDimension.Add(userDim.taoSuiteName);
+            }
+            if (yValid && !yDimension.Contains(userDim.taoSuiteName)) {
+              yDimension.Add(userDim.taoSuiteName);
+            }
+            if (zValid && !zDimension.Contains(userDim.taoSuiteName)) {
+              zDimension.Add(userDim.taoSuiteName);
+            }
+
+          }
+
+          // Tao Suite crosses all dimensions -- therefore tag as "related" Tao Suite (for statistics)
+          if (xDimension.Contains(userDim.taoSuiteName) && yDimension.Contains(userDim.taoSuiteName) && zDimension.Contains(userDim.taoSuiteName)) {
+            if (!relatedTaoSuites.Contains(userDim.taoSuiteName)) {
+              relatedTaoSuites.Add(userDim.taoSuiteName);
+            }
+          }
+
+        }
+      }
+
+      public void setMatrixCell(List<string> dim1Tokens, List<string> dim2Tokens, List<string> dim3Tokens, string rowText, string colText, List<TaoSuiteDimensionMap> userMap) {
+
+        StringBuilder strapLine = new StringBuilder();
+
+        // 2 = row; 1 = column;
+        switch (dim2Tokens[0] + dim1Tokens[0]) {
+          case "00":
+            rowDimension = String.Empty;
+            rowAttribute = String.Empty;
+            colDimension = String.Empty;
+            colAttribute = String.Empty;
+            strapLine.Append(rowText);
+            break;
+          case "01":
+          case "02":
+            rowDimension = String.Empty;
+            rowAttribute = String.Empty;
+            colDimension = dim1Tokens[1];
+            colAttribute = colText;
+            strapLine.Append(colText);
+            break;
+          case "10":
+          case "20":
+            rowDimension = dim2Tokens[1];
+            rowAttribute = rowText;
+            colDimension = String.Empty;
+            colAttribute = String.Empty;
+            strapLine.Append(rowText);
+            break;
+          case "11":
+          case "12":
+          case "21":
+          case "22":
+            rowDimension = dim2Tokens[1];
+            rowAttribute = rowText;
+            colDimension = dim1Tokens[1];
+            colAttribute = colText;
+            if (rowText.Equals(colText)) {
+              strapLine.Append(rowText);
+            } else {
+              strapLine.Append(rowText + " / " + colText);
+            }
+            break;
+          default:
+            break;
+        }
+
+        // 3 = context;
+        switch (dim3Tokens[0]) {
+          case "0":
+            ctxDimension = String.Empty;
+            ctxAttribute = String.Empty;
+            break;
+          case "1":
+            strapLine.Append(" (" + dim3Tokens[1] + ")");
+            ctxDimension = dim3Tokens[1];
+            ctxAttribute = String.Empty;
+            break;
+          case "2":
+            ctxDimension = dim3Tokens[1];
+            ctxAttribute = dim3Tokens[2];
+            strapLine.Append(" (" + dim3Tokens[2] + ")");
+            break;
+          default:
+            break;
+        }
+
+        chartTitle = strapLine.ToString();
+
+        testsPass = 0.0;
+        totalTests = 0.0;
+        relatedTaoSuites = new List<string>();
+
+        // Populate (X,Y,Z) cell location with all applicable Tao Suites...
+        tagRelevantTaoSuites(userMap);
+
+      }
+
+    }
+
+    // Represents a "column" of matrix cells
+    public class TaoSummaryChartMatrixColumn {
+      public string rowId = String.Empty;
+      public List<TaoSummaryChartMatrixCell> matrixColumns = new List<TaoSummaryChartMatrixCell>();
+    }
+
+    // Represents the chart matrix as "rows" of "matrix columns" and statistic data
+    public class TaoSummaryChartMatrix {
+
+      public string matrixId = String.Empty;
+      public DataTable summaryOfDoneDataTable;
+      public List<TaoSummaryChartMatrixColumn> matrixRows = new List<TaoSummaryChartMatrixColumn>();
+
+      public void setSummaryOfDoneCache(string projectRootFolder, string appId, string dbInstance) {
+        TaoReportCache tmpCacheStatus = new TaoReportCache(projectRootFolder, appId, dbInstance);
+        if (!tmpCacheStatus.isCacheCurrent()) {
+          MessageBox.Show("The statistics for the Tao Suite Reports need re-calculating.  This will take a short while (please be patient).", "Re-calculating Statistics", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+          tmpCacheStatus.updateCacheResults();
+        }
+        summaryOfDoneDataTable = tmpCacheStatus.getCacheDataTable();
+      }
+
+    }
 
     private TabControl tabCtrlAppStatus;                                            // This is the main "tab control" container for status reports
     private List<TabPage> appStatusTabPages = new List<TabPage>();                  // This is the tab pages, each represent one specific Tao App.
     private List<TabControl> statusReportsTabControl = new List<TabControl>();      // This is a sub "tab control" contained within each Tao App.
     private List<TabPage> statusReportsTabPages = new List<TabPage>();              // This is the sub tab pages per report per Tao Application.
+    private List<ComboBox> comboDimensionFilter = new List<ComboBox>();             // This is the group-by dimensions for the summary tabs.
 
     private void walkDirectoryStructure(System.IO.DirectoryInfo currentFolder, TreeNode currentNode, string keyName) {
       int nodeIndex = 0;
@@ -44,9 +257,9 @@ namespace taoGUI {
           prjNode.ToolTipText = applicationId;
           TreeNode l1_node = prjNode.Nodes.Add(applicationId + "|status", "Application Status");
           l1_node.Nodes.Add(applicationId + "|status|reports", "Tao Suite Reports");
-          l1_node.Nodes.Add(applicationId + "|status|summary", "Summary");
-          l1_node.Nodes.Add(applicationId + "|status|velocity", "Velocity");
-          l1_node.Nodes.Add(applicationId + "|status|stability", "Stability");
+          l1_node.Nodes.Add(applicationId + "|status|summary", "Summary of Done");
+          l1_node.Nodes.Add(applicationId + "|status|velocity", "Velocity of Alignment");
+          l1_node.Nodes.Add(applicationId + "|status|stability", "Tao Application Stability");
           prjNode.Nodes.Add(applicationId + "|tao", "Tao Sheets");
           TreeNode fileStrctNode = prjNode.Nodes.Add(applicationId + "|file", "File Structure");
           string appFolderName = ctx.getAppFolder();
@@ -136,9 +349,31 @@ namespace taoGUI {
       System.IO.File.Move(tempFile, fileLocation);
     }
 
+    private void alwaysOn_DrawNode(object sender, DrawTreeNodeEventArgs e) {
+      if (e.Node != null) {
+        // if treeview's HideSelection property is "True", 
+        // this will always returns "False" on unfocused treeview
+        var selected = (e.State & TreeNodeStates.Selected) == TreeNodeStates.Selected;
+        var unfocused = !e.Node.TreeView.Focused;
+
+        // we need to do owner drawing only on a selected node
+        // and when the treeview is unfocused, else let the OS do it for us
+        if (selected && unfocused) {
+          var font = e.Node.NodeFont ?? e.Node.TreeView.Font;
+          e.Graphics.FillRectangle(SystemBrushes.Highlight, e.Bounds);
+          TextRenderer.DrawText(e.Graphics, e.Node.Text, font, e.Bounds, SystemColors.HighlightText, TextFormatFlags.GlyphOverhangPadding);
+        } else {
+          e.DrawDefault = true;
+        }
+      }
+    }
+
     public Form1() {
       InitializeComponent();
       showProjectsInTreeView();
+      taoProjectView.DrawMode = TreeViewDrawMode.OwnerDrawText;
+      taoProjectView.HideSelection = false;
+      taoProjectView.DrawNode += new DrawTreeNodeEventHandler(alwaysOn_DrawNode);
     }
 
     ~Form1() {
@@ -251,7 +486,7 @@ namespace taoGUI {
       string appId = getProjectViewAppId();
       if (appId != null) {
         showAppStatusTabPage(appId);
-        showStatusReprtTabPage(appId, "Summary", "|status|summary");
+        showStatusReprtTabPage(appId, "Summary of Done", "|status|summary");
       }
     }
 
@@ -259,7 +494,7 @@ namespace taoGUI {
       string appId = getProjectViewAppId();
       if (appId != null) {
         showAppStatusTabPage(appId);
-        showStatusReprtTabPage(appId, "Weather - Actual", "|weather|actual");
+        showStatusReprtTabPage(appId, "Weather - Current", "|weather|actual");
       }
     }
 
@@ -544,7 +779,7 @@ namespace taoGUI {
       xlWorkbook.Sheets[1].Range("J2").Value = "Lower Band";
       xlWorkbook.Sheets[1].Range("K2").Value = "Upper Band";
       xlWorkbook.Sheets[1].Range("L2").Value = "Volatility";
-      
+
       // Format the header
       xlWorkbook.Sheets[1].Range("B2:L2").Interior.Color = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.FromArgb(204, 204, 255));  // dull blue
       xlWorkbook.Sheets[1].Range("B2:L2").Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
@@ -556,7 +791,7 @@ namespace taoGUI {
       // Export the data
       int excelRowIndex = 3;
       foreach (DataGridViewRow row in taoSheets.Rows) {
-        xlWorkbook.Sheets[1].Range("B"+ excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[0]).Value;
+        xlWorkbook.Sheets[1].Range("B" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[0]).Value;
         xlWorkbook.Sheets[1].Range("C" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[1]).Value;
         xlWorkbook.Sheets[1].Range("D" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[2]).Value;
         xlWorkbook.Sheets[1].Range("E" + excelRowIndex.ToString()).Value = ((DataGridViewCell)row.Cells[3]).Value;
@@ -923,9 +1158,278 @@ namespace taoGUI {
       toolTip1.SetToolTip(buttonExportTaoSuiteSummary, "Export the Tao Suite Reports view to Microsoft Excel");
     }
 
-    private void button_SetSummaryDimensions(object sender, EventArgs e) {
-      formGroupByDimensions newProj = new formGroupByDimensions(this); // Passing master form to trigger master-form refresh after sub-form commit
+    private void button_SetSummaryDimensions(object sender, EventArgs e, string projectRootFolder, string appId) {
+      formGroupByDimensions newProj = new formGroupByDimensions(this, projectRootFolder, appId); // Passing master form to trigger master-form refresh after sub-form commit
       newProj.ShowDialog();
+    }
+
+    public void refreshGroupByDimensions() {
+      int comboIndex = 1;
+      foreach (ComboBox comboDimFilter in comboDimensionFilter) {
+        comboDimFilter.Items.Clear();
+
+        ComboBoxItem dimAttribute = new ComboBoxItem();
+        dimAttribute.Text = "Dimension " + comboIndex.ToString();
+        dimAttribute.Value = "0";
+        comboDimFilter.Items.Add(dimAttribute);
+
+        if (File.Exists(TAO_DIMENSIONS_FILE)) {
+          Dictionary<string, TaoJsonGroupByDimension> userDimensions = TaoJsonConfigReader.getTaoGroupByDimensionMap(TAO_DIMENSIONS_FILE);
+          foreach (TaoJsonGroupByDimension userDimension in userDimensions.Values) {
+
+            dimAttribute = new ComboBoxItem();
+            dimAttribute.Text = String.Empty;
+            dimAttribute.Value = "0";
+            comboDimFilter.Items.Add(dimAttribute);
+
+            dimAttribute = new ComboBoxItem();
+            dimAttribute.Text = userDimension.dimension.ToString();
+            dimAttribute.Value = "1|" + userDimension.dimension.ToString();
+            comboDimFilter.Items.Add(dimAttribute);
+
+            List<string> attributes = userDimension.attributes;
+            foreach (string attr in attributes) {
+
+              dimAttribute = new ComboBoxItem();
+              dimAttribute.Text = "     " + attr.ToString();
+              dimAttribute.Value = "2|" + userDimension.dimension.ToString() + "|" + attr.ToString();
+              comboDimFilter.Items.Add(dimAttribute);
+
+            }
+          }
+        }
+        comboDimFilter.SelectedIndex = 0;
+        comboIndex++;
+        if (comboIndex > 3) {
+          comboIndex = 1;
+        }
+      }
+    }
+
+    private void buildSummaryMatrix(string projectRootFolder, string appId, string dbInstance, string dim1Filter, string dim2Filter, string dim3Filter, Panel pieChartPanel) {
+
+      string matrixName = "chartSummaryOfDoneMatrix." + appId + "." + dbInstance;
+      string dimensionsLocation = Application.StartupPath + @"\taoGUI.resources\dimensions.tao";
+      string dimensionsMapLocation = Application.StartupPath + @"\taoGUI.resources\dim_" + appId + ".tao";
+      List<TaoJsonGroupByDimension> groupByDimensions = new List<TaoJsonGroupByDimension>();
+      List<TaoSuiteDimensionMap> userTaoSuiteDimensionMap = new List<TaoSuiteDimensionMap>();
+      List<string> dim1Tokens = dim1Filter.Split('|').ToList<string>();
+      List<string> dim2Tokens = dim2Filter.Split('|').ToList<string>();
+      List<string> dim3Tokens = dim3Filter.Split('|').ToList<string>();
+
+      // Get all dimensions
+      if (File.Exists(dimensionsLocation)) {
+        Dictionary<string, TaoJsonGroupByDimension> userDimensions = TaoJsonConfigReader.getTaoGroupByDimensionMap(dimensionsLocation);
+        foreach (TaoJsonGroupByDimension userDimension in userDimensions.Values) {
+          groupByDimensions.Add(userDimension); // use this later for validation (e.g. prevent duplication) and persist to JSON file
+        }
+      }
+
+      // Get the user defined mappings of Tao Suites to group-by dimensions
+      if (File.Exists(dimensionsMapLocation)) {
+        Dictionary<string, TaoJsonTaoSuiteDimensionMap> tmpDimension = TaoJsonConfigReader.getTaoSuiteDimensionMap(dimensionsMapLocation);
+        foreach (TaoJsonTaoSuiteDimensionMap userDimension in tmpDimension.Values) {
+          TaoSuiteDimensionMap tmpDimensionMap = new TaoSuiteDimensionMap();
+          tmpDimensionMap.taoSuiteName = userDimension.taoSuiteName;
+          tmpDimensionMap.taoGroupByAttributes = new List<DimensionAttributeMap>();
+          foreach (TaoJsonGroupByDimension tmpMap in userDimension.groupByDimensions) {
+            DimensionAttributeMap tmpDim = new DimensionAttributeMap();
+            tmpDim.dimension = tmpMap.dimension;
+            tmpDim.dimensionAttributes = new List<string>();
+            foreach (string tmpAttr in tmpMap.attributes) {
+              tmpDim.dimensionAttributes.Add(tmpAttr);
+            }
+            tmpDimensionMap.taoGroupByAttributes.Add(tmpDim);
+          }
+          userTaoSuiteDimensionMap.Add(tmpDimensionMap);
+        }
+      }
+
+      // Create the matrix...
+      TaoSummaryChartMatrix tmpMatrix = new TaoSummaryChartMatrix();
+      tmpMatrix.matrixId = matrixName;
+      tmpMatrix.matrixRows = new List<TaoSummaryChartMatrixColumn>();
+
+      // Set up the statistics...
+      tmpMatrix.summaryOfDoneDataTable = new DataTable();
+      tmpMatrix.setSummaryOfDoneCache(projectRootFolder, appId, dbInstance);
+
+      // Build matrix...
+      if (dim2Tokens[0].Equals("0")) {
+
+        TaoSummaryChartMatrixColumn tmpRow = new TaoSummaryChartMatrixColumn();
+        tmpRow.rowId = "All Tao Suites";
+        tmpRow.matrixColumns = new List<TaoSummaryChartMatrixCell>();
+
+        if (dim1Tokens[0].Equals("0")) {
+
+          TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+          tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, "All Tao Suites", String.Empty, userTaoSuiteDimensionMap);
+          tmpRow.matrixColumns.Add(tmpCell);
+
+        } else if (dim1Tokens[0].Equals("1")) {
+
+          var idxDim = groupByDimensions.FirstOrDefault(x => x.dimension.Equals(dim1Tokens[1]));
+          if (!String.IsNullOrEmpty(idxDim.dimension)) {
+            foreach (string idxCol in idxDim.attributes) {
+              TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+              tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, "All Tao Suites", idxCol, userTaoSuiteDimensionMap);
+              tmpRow.matrixColumns.Add(tmpCell);
+            }
+          }
+
+        } else if (dim1Tokens[0].Equals("2")) {
+
+          TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+          tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, "All Tao Suites", dim1Tokens[2], userTaoSuiteDimensionMap);
+          tmpRow.matrixColumns.Add(tmpCell);
+
+        }
+        tmpMatrix.matrixRows.Add(tmpRow);
+
+      } else if (dim2Tokens[0].Equals("1")) {
+        var idxDimension = groupByDimensions.FirstOrDefault(x => x.dimension.Equals(dim2Tokens[1]));
+        if (!String.IsNullOrEmpty(idxDimension.dimension)) {
+          foreach (string attr in idxDimension.attributes) {
+            TaoSummaryChartMatrixColumn tmpRow = new TaoSummaryChartMatrixColumn();
+            tmpRow.rowId = attr;
+            tmpRow.matrixColumns = new List<TaoSummaryChartMatrixCell>();
+
+            if (dim1Tokens[0].Equals("0")) {
+
+              TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+              tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, attr, String.Empty, userTaoSuiteDimensionMap);
+              tmpRow.matrixColumns.Add(tmpCell);
+
+            } else if (dim1Tokens[0].Equals("1")) {
+
+              var idxDim = groupByDimensions.FirstOrDefault(x => x.dimension.Equals(dim1Tokens[1]));
+              if (!String.IsNullOrEmpty(idxDim.dimension)) {
+                foreach (string idxCol in idxDim.attributes) {
+                  TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+                  tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, attr, idxCol, userTaoSuiteDimensionMap);
+                  tmpRow.matrixColumns.Add(tmpCell);
+                }
+              }
+
+            } else if (dim1Tokens[0].Equals("2")) {
+
+              TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+              tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, attr, dim1Tokens[2], userTaoSuiteDimensionMap);
+              tmpRow.matrixColumns.Add(tmpCell);
+
+            }
+            tmpMatrix.matrixRows.Add(tmpRow);
+
+          }
+        }
+      } else if (dim2Tokens[0].Equals("2")) {
+        TaoSummaryChartMatrixColumn tmpRow = new TaoSummaryChartMatrixColumn();
+        tmpRow.rowId = dim2Tokens[2];
+        tmpRow.matrixColumns = new List<TaoSummaryChartMatrixCell>();
+
+        if (dim1Tokens[0].Equals("0")) {
+
+          TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+          tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, dim2Tokens[2], String.Empty, userTaoSuiteDimensionMap);
+          tmpRow.matrixColumns.Add(tmpCell);
+
+        } else if (dim1Tokens[0].Equals("1")) {
+
+          var idxDim = groupByDimensions.FirstOrDefault(x => x.dimension.Equals(dim1Tokens[1]));
+          if (!String.IsNullOrEmpty(idxDim.dimension)) {
+            foreach (string idxCol in idxDim.attributes) {
+              TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+              tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, dim2Tokens[2], idxCol, userTaoSuiteDimensionMap);
+              tmpRow.matrixColumns.Add(tmpCell);
+            }
+          }
+
+        } else if (dim1Tokens[0].Equals("2")) {
+
+          TaoSummaryChartMatrixCell tmpCell = new TaoSummaryChartMatrixCell();
+          tmpCell.setMatrixCell(dim1Tokens, dim2Tokens, dim3Tokens, dim2Tokens[2], dim1Tokens[2], userTaoSuiteDimensionMap);
+          tmpRow.matrixColumns.Add(tmpCell);
+
+        }
+
+        tmpMatrix.matrixRows.Add(tmpRow);
+      }
+
+      // Group the statistics by dimension attributes using data table
+      foreach (TaoSummaryChartMatrixColumn rowCell in tmpMatrix.matrixRows) {
+        foreach (TaoSummaryChartMatrixCell colCell in rowCell.matrixColumns) {
+          foreach (string tao in colCell.relatedTaoSuites) {
+            DataRow[] foundRows = tmpMatrix.summaryOfDoneDataTable.Select("taoSuiteName = '" + tao + "'");
+            if (foundRows.Length == 1) {
+              colCell.testsPass += Convert.ToDouble(foundRows[0]["passRate"].ToString()); // Assume this means number range 0 to 100 ... not 0 to 1.
+              colCell.totalTests += 100.0;
+            }
+          }
+        }
+      }
+
+      // Find all previous charts (provided each chart has the same name as matrix...)
+      var oldCharts = pieChartPanel.Controls.Find("pieChart", true);
+      foreach (Chart oldChart in oldCharts) {
+        pieChartPanel.Controls.Remove(oldChart);
+      }
+
+      // Create new charts (with 4 pixcel margin off-set) ...
+      int yCoord = 4;
+      foreach (TaoSummaryChartMatrixColumn rowCell in tmpMatrix.matrixRows) {
+        int xCoord = 4;
+        foreach (TaoSummaryChartMatrixCell colCell in rowCell.matrixColumns) {
+
+          Chart pieChart = new Chart();
+          pieChart.Name = "pieChart";
+          pieChart.Location = new System.Drawing.Point(xCoord, yCoord);
+          pieChart.Series.Clear();
+          pieChart.Palette = ChartColorPalette.SemiTransparent;
+          pieChart.BackColor = Color.FromArgb(132, System.Drawing.Color.GhostWhite);
+          pieChart.Titles.Add(colCell.chartTitle);
+          Font legendTitleFont = new Font(pieChart.Titles[0].Font, FontStyle.Regular);
+          NumberFormatInfo nfi = CultureInfo.CreateSpecificCulture("en-US").NumberFormat;
+          Legend pieChartLegend = new Legend() { BackColor = System.Drawing.Color.White, ForeColor = Color.Black, Title = "Tao Suites: " + (colCell.totalTests/100d).ToString("N0",nfi), TitleFont = legendTitleFont };
+          pieChart.Legends.Add(pieChartLegend);
+
+          ChartArea pieChartArea = new ChartArea();
+          pieChart.ChartAreas.Add(pieChartArea);
+          pieChart.ChartAreas[0].BackColor = Color.Transparent;
+
+          Series pieChartSeries = new Series {
+            IsVisibleInLegend = true,
+            Color = System.Drawing.Color.Green,
+            ChartType = SeriesChartType.Pie
+          };
+
+          pieChartSeries.Points.Add(colCell.totalTests - colCell.testsPass); // Fail
+          pieChartSeries.Points.Add(colCell.testsPass);                      // Pass
+
+          pieChartSeries.Points[0].AxisLabel = (100d * (colCell.totalTests - colCell.testsPass) / colCell.totalTests).ToString("0.00") + "%";
+          pieChartSeries.Points[0].LegendText = "Fail";
+          pieChartSeries.Points[1].AxisLabel = (100d * colCell.testsPass / colCell.totalTests).ToString("0.00") + "%";
+          pieChartSeries.Points[1].LegendText = "Pass";
+
+          pieChart.Series.Add(pieChartSeries);
+          pieChart.Invalidate();
+
+          pieChartPanel.Controls.Add(pieChart);
+
+          xCoord += 304;
+
+        }
+        yCoord += 304;
+      }
+
+    }
+
+    private void changeDimensionFilter(object sender, EventArgs e, string projectRootFolder, string appId, string dbInstance, string dim1Filter, string dim2Filter, string dim3Filter, Panel pieChartPanel) {
+      buildSummaryMatrix(projectRootFolder, appId, dbInstance, dim1Filter, dim2Filter, dim3Filter, pieChartPanel);
+    }
+
+    private void changeDbConnectionSummaryOfDone(object sender, EventArgs e, string projectRootFolder, string appId, string dbInstance, string dim1Filter, string dim2Filter, string dim3Filter, Panel pieChartPanel) {
+      buildSummaryMatrix(projectRootFolder, appId, dbInstance, dim1Filter, dim2Filter, dim3Filter, pieChartPanel);
     }
 
     private void addTabContentSummary(string appId, TabPage tabPageContent) {
@@ -970,8 +1474,7 @@ namespace taoGUI {
       comboDim1Filter.TabIndex = 0;
       comboDim1Filter.Top = 0;
       comboDim1Filter.Left = 204;
-      comboDim1Filter.Items.Add("Dimension 1");
-      comboDim1Filter.SelectedIndex = 0;
+      comboDimensionFilter.Add(comboDim1Filter);
 
       // Create some filters so that user can focus on specific Summary "group by" constellations
       System.Windows.Forms.ComboBox comboDim2Filter = new System.Windows.Forms.ComboBox();
@@ -982,8 +1485,7 @@ namespace taoGUI {
       comboDim2Filter.TabIndex = 0;
       comboDim2Filter.Top = 0;
       comboDim2Filter.Left = 408;
-      comboDim2Filter.Items.Add("Dimension 2");
-      comboDim2Filter.SelectedIndex = 0;
+      comboDimensionFilter.Add(comboDim2Filter);
 
       // Create some filters so that user can focus on specific Summary "group by" constellations
       System.Windows.Forms.ComboBox comboDim3Filter = new System.Windows.Forms.ComboBox();
@@ -994,8 +1496,27 @@ namespace taoGUI {
       comboDim3Filter.TabIndex = 0;
       comboDim3Filter.Top = 0;
       comboDim3Filter.Left = 612;
-      comboDim3Filter.Items.Add("Dimension 3");
-      comboDim3Filter.SelectedIndex = 0;
+      comboDimensionFilter.Add(comboDim3Filter);
+
+      // Create a panel (scrollable content
+      Panel pieChartPanel = new Panel();
+      pieChartPanel.Name = "pieChartPanel";
+      pieChartPanel.Location = new System.Drawing.Point(0, 0);
+      pieChartPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+      pieChartPanel.AutoScroll = true;
+      pieChartPanel.TabIndex = 0;
+
+      // Populate each drop down list with user dimensions
+      refreshGroupByDimensions();
+
+      // Build the N dimensional matrix
+      buildSummaryMatrix(projectRootFolder, appId, dbInstance, (comboDim1Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim2Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim3Filter.SelectedItem as ComboBoxItem).Value.ToString(), pieChartPanel);
+
+      // Define triggers on the Dimension Filters to change the N dimensional matrix
+      comboDbConnSummary.SelectedValueChanged += new System.EventHandler((sender, e) => changeDbConnectionSummaryOfDone(sender, e, projectRootFolder, appId, comboDbConnSummary.Items[comboDbConnSummary.SelectedIndex].ToString(), (comboDim1Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim2Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim3Filter.SelectedItem as ComboBoxItem).Value.ToString(), pieChartPanel));
+      comboDim1Filter.SelectedValueChanged += new System.EventHandler((sender, e) => changeDimensionFilter(sender, e, projectRootFolder, appId, comboDbConnSummary.Items[comboDbConnSummary.SelectedIndex].ToString(), (comboDim1Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim2Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim3Filter.SelectedItem as ComboBoxItem).Value.ToString(), pieChartPanel));
+      comboDim2Filter.SelectedValueChanged += new System.EventHandler((sender, e) => changeDimensionFilter(sender, e, projectRootFolder, appId, comboDbConnSummary.Items[comboDbConnSummary.SelectedIndex].ToString(), (comboDim1Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim2Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim3Filter.SelectedItem as ComboBoxItem).Value.ToString(), pieChartPanel));
+      comboDim3Filter.SelectedValueChanged += new System.EventHandler((sender, e) => changeDimensionFilter(sender, e, projectRootFolder, appId, comboDbConnSummary.Items[comboDbConnSummary.SelectedIndex].ToString(), (comboDim1Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim2Filter.SelectedItem as ComboBoxItem).Value.ToString(), (comboDim3Filter.SelectedItem as ComboBoxItem).Value.ToString(), pieChartPanel));
 
       // Buttons ...
       System.Windows.Forms.Button buttonSetSummaryDimensions = new System.Windows.Forms.Button();
@@ -1008,7 +1529,7 @@ namespace taoGUI {
       buttonSetSummaryDimensions.Left = 818;
       buttonSetSummaryDimensions.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
       buttonSetSummaryDimensions.UseVisualStyleBackColor = true;
-      buttonSetSummaryDimensions.Click += new EventHandler((sender, e) => button_SetSummaryDimensions(sender, e));
+      buttonSetSummaryDimensions.Click += new EventHandler((sender, e) => button_SetSummaryDimensions(sender, e, projectRootFolder, appId));
 
       // Attach the data grid view to a container, add pading top to the container (24px) to give room to some controls (e.g. drop down list and search)
       tabPageContent.Controls.Add(comboDbConnSummary);
@@ -1016,6 +1537,7 @@ namespace taoGUI {
       tabPageContent.Controls.Add(comboDim2Filter);
       tabPageContent.Controls.Add(comboDim3Filter);
       tabPageContent.Controls.Add(buttonSetSummaryDimensions);
+      tabPageContent.Controls.Add(pieChartPanel);
 
       // Finally set up button tool-tips...
       ToolTip toolTip1 = new ToolTip();
@@ -1039,14 +1561,14 @@ namespace taoGUI {
         case "Tao Suite Reports":
           addTabContentTaoSuiteReports(appId, tabPageContent);
           break;
-        case "Summary":
+        case "Summary of Done":
           addTabContentSummary(appId, tabPageContent);
           break;
-        case "Velocity":
+        case "Velocity of Alignment":
           break;
-        case "Stability":
+        case "Tao Application Stability":
           break;
-        case "Weather - Actual":
+        case "Weather - Current":
           break;
         case "Weather - Forecast":
           break;
@@ -1157,7 +1679,7 @@ namespace taoGUI {
       string appId = getProjectViewAppId();
       if (appId != null) {
         showAppStatusTabPage(appId);
-        showStatusReprtTabPage(appId, "Velocity", "|status|velocity");
+        showStatusReprtTabPage(appId, "Velocity of Alignment", "|status|velocity");
       }
     }
 
@@ -1165,7 +1687,7 @@ namespace taoGUI {
       string appId = getProjectViewAppId();
       if (appId != null) {
         showAppStatusTabPage(appId);
-        showStatusReprtTabPage(appId, "Stability", "|status|stability");
+        showStatusReprtTabPage(appId, "Tao Application Stability", "|status|stability");
       }
     }
 
